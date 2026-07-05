@@ -1,0 +1,11 @@
+{
+    "model": "large-v3",
+    "language": "auto",
+    "output": "~/Downloads",
+    "formats": [
+        "txt"
+    ],
+    "beam_size": 5,
+    "vad_filter": true,
+    "compute_type": "int8"
+}

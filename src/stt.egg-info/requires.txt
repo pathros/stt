@@ -1,0 +1,3 @@
+faster-whisper
+rich
+prompt_toolkit

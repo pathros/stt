@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+src/stt/__init__.py
+src/stt/audio.py
+src/stt/cli.py
+src/stt/config.py
+src/stt/formatter.py
+src/stt/main.py
+src/stt/progress.py
+src/stt/transcriber.py
+src/stt/utils.py
+src/stt.egg-info/PKG-INFO
+src/stt.egg-info/SOURCES.txt
+src/stt.egg-info/dependency_links.txt
+src/stt.egg-info/entry_points.txt
+src/stt.egg-info/requires.txt
+src/stt.egg-info/top_level.txt
