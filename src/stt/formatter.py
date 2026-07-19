@@ -30,9 +30,34 @@ def show_config(cfg) -> None:
     console.print(table)
 
 
+def main_menu() -> None:
+
+    table = Table(show_header=False, box=None, padding=(0, 2))
+
+    table.add_column(style="bold cyan", justify="right")
+    table.add_column()
+
+    table.add_row("1", "Archivo local")
+    table.add_row("2", "YouTube")
+    table.add_row("3", "Configuración")
+    table.add_row("4", "Salir")
+
+    console.print(table)
+
+
+def section(title: str) -> None:
+
+    console.rule(f"[bold cyan]{title}[/bold cyan]")
+
+
 def info(message: str):
 
     console.print(f"[green]✓[/green] {message}")
+
+
+def warn(message: str):
+
+    console.print(f"[yellow]![/yellow] {message}")
 
 
 def error(message: str):
