@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Modelos y cachés de Whisper / HuggingFace
+models/
+.cache/
+
+# Audios y salidas de transcripción
+*.mp3
+*.m4a
+*.opus
+*.wav
+*.flac
+*.aac
+*.srt
+*.vtt
+
+# Sistema
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
