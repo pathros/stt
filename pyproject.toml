@@ -15,11 +15,15 @@ dependencies = [
     "youtube-transcript-api>=1.2.4",
     "rich>=15.0.0",
     "prompt_toolkit>=3.0.52",
+    "PyYAML>=6.0.3",
+    "edge-tts>=7.0.0",
 ]
 
 # Requisito de sistema (no instalable vía pip):
 #   ffmpeg  ->  brew install ffmpeg
 #   yt-dlp usa ffmpeg para extraer y normalizar audio.
+#   edge-tts (motor de podcast opcional) usa las voces neuronales en línea
+#   de Microsoft Edge; requiere conexión a internet, sin API key.
 
 [project.scripts]
 stt = "stt.main:main"

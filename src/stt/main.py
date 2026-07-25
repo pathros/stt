@@ -1,7 +1,7 @@
 import argparse
 
 from stt.config import load_config
-from stt.cli import run_menu, handle_local, handle_youtube
+from stt.cli import run_menu, handle_local, handle_youtube, handle_podcast
 
 
 def main():
@@ -75,6 +75,20 @@ def main():
         help="En YouTube, forzar transcripción con Whisper (ignora captions)",
     )
 
+    parser.add_argument(
+        "--no-vad",
+        dest="vad_filter",
+        action="store_false",
+        default=None,
+        help="Desactiva el filtro VAD (recomendado para canciones/música)",
+    )
+
+    parser.add_argument(
+        "--rate",
+        type=int,
+        help="Podcast: velocidad de voz en palabras por minuto (p. ej. 180)",
+    )
+
     args = parser.parse_args()
 
     # Overrides de configuración vía flags.
@@ -91,6 +105,10 @@ def main():
         from stt.utils import expand_path
 
         cfg.output = expand_path(args.output)
+
+    if args.vad_filter is not None:
+
+        cfg.vad_filter = args.vad_filter
 
     formats = None
 
@@ -109,6 +127,12 @@ def main():
     if args.source is None:
 
         run_menu(cfg)
+
+    elif args.source == "podcast":
+
+        audio_format = formats[0] if formats else None
+
+        handle_podcast(cfg, args.url, audio_format=audio_format, rate=args.rate)
 
     elif args.source == "youtube":
 

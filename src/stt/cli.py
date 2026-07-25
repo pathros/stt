@@ -42,7 +42,7 @@ def run_menu(cfg: Config) -> None:
 
         choice = Prompt.ask(
             ">",
-            choices=["1", "2", "3", "4"],
+            choices=["1", "2", "3", "4", "5"],
             show_choices=False,
         )
 
@@ -56,9 +56,13 @@ def run_menu(cfg: Config) -> None:
 
         elif choice == "3":
 
-            handle_config(cfg)
+            handle_podcast(cfg)
 
         elif choice == "4":
+
+            handle_config(cfg)
+
+        elif choice == "5":
 
             console.print("[dim]Hasta luego.[/dim]")
 
@@ -120,6 +124,10 @@ def handle_local(
     info(f"Archivo: {audio}")
 
     info(f"Modelo: {cfg.model} ({cfg.compute_type}, CPU) · idioma: {cfg.language}")
+
+    if not cfg.vad_filter:
+
+        info("VAD desactivado (mejor para canciones/música).")
 
     if minutes:
 
@@ -420,6 +428,152 @@ def handle_youtube(
         except Exception as exc:  # noqa: BLE001
 
             error(f"Error con «{video.title}»: {exc}")
+
+
+def _apply_voice(script, label: str, voice: str) -> None:
+    """Fija la voz resuelta para una etiqueta en el guion y sus turnos."""
+
+    script.voices[label] = voice
+
+    for turn in script.turns:
+
+        if turn.label == label:
+
+            turn.voice = voice
+
+
+def _resolve_say_voices(script) -> None:
+    """Resuelve voces del motor say a su variante en el idioma del guion.
+
+    Las voces multilingües (Reed, Eddy…) se leen en inglés si se pasan solo
+    como "Reed"; hay que usar "Reed (Español (México))".
+    """
+
+    from stt.podcast import resolve_voice, DEFAULT_VOICES
+
+    for label, voice in list(script.voices.items()):
+
+        resolved = resolve_voice(voice, script.language)
+
+        if resolved is None:
+
+            resolved = resolve_voice(DEFAULT_VOICES[0], script.language) or DEFAULT_VOICES[0]
+
+            warn(f"Voz «{voice}» no encontrada; uso «{resolved}» para {label}.")
+
+        elif resolved != voice:
+
+            warn(f"{label}: «{voice}» → «{resolved}» (variante en {script.language})")
+
+        _apply_voice(script, label, resolved)
+
+
+def _resolve_edge_voices(script) -> None:
+    """Valida las voces neuronales de edge-tts (p. ej. es-MX-JorgeNeural)."""
+
+    from stt.podcast import edge_voices, DEFAULT_EDGE_VOICES
+
+    installed = edge_voices()
+
+    default = DEFAULT_EDGE_VOICES[0]
+
+    for label, voice in list(script.voices.items()):
+
+        chosen = voice
+
+        if installed and voice not in installed:
+
+            warn(f"Voz edge «{voice}» no válida; uso «{default}» para {label}.")
+
+            chosen = default
+
+        _apply_voice(script, label, chosen)
+
+
+def handle_podcast(
+    cfg: Config,
+    path: str | None = None,
+    audio_format: str | None = None,
+    rate: int | None = None,
+) -> None:
+    """Genera un podcast de audio a partir de un guion .md."""
+
+    from stt.podcast import parse_script, synthesize, AUDIO_CODECS
+
+    section("Podcast")
+
+    if path is None:
+
+        path = Prompt.ask("Ruta del guion (.md)").strip()
+
+    script_path = expand_path(path)
+
+    if not script_path.exists():
+
+        error(f"El guion no existe: {script_path}")
+
+        return
+
+    try:
+
+        script = parse_script(script_path)
+
+    except Exception as exc:  # noqa: BLE001
+
+        error(f"No se pudo leer el guion: {exc}")
+
+        return
+
+    if not script.turns:
+
+        error(
+            "El guion no tiene turnos de habla. Usa el formato "
+            "'**ETIQUETA:** texto' y declara las voces en el front matter."
+        )
+
+        return
+
+    fmt = (audio_format or "m4a").lower().lstrip(".")
+
+    if fmt not in AUDIO_CODECS:
+
+        error(f"Formato de audio no soportado: {fmt} (usa m4a, mp3 o wav)")
+
+        return
+
+    if script.engine == "edge":
+
+        _resolve_edge_voices(script)
+
+    else:
+
+        _resolve_say_voices(script)
+
+    info(f"Motor: {script.engine}")
+
+    info(f"Título: {script.title}")
+
+    info(f"Turnos: {len(script.turns)} · voces: " +
+         ", ".join(f"{k}={v}" for k, v in script.voices.items()))
+
+    print()
+
+    try:
+
+        with console.status(
+            "[cyan]Sintetizando voces y uniendo el audio…[/cyan]",
+            spinner="dots",
+        ):
+
+            out_path = synthesize(script, cfg.output, fmt=fmt, rate=rate)
+
+    except Exception as exc:  # noqa: BLE001
+
+        error(f"No se pudo generar el podcast: {exc}")
+
+        return
+
+    info(f"Podcast generado → {out_path}")
 
 
 def handle_config(cfg: Config) -> None:

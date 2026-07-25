@@ -34,13 +34,39 @@ def human_duration(seconds: float) -> str:
 
 
 def expand_path(path: str | Path) -> Path:
-    """Expande ~ y variables de entorno, y resuelve a ruta absoluta."""
+    """Expande ~ y variables de entorno, y resuelve a ruta absoluta.
+
+    También tolera rutas pegadas con escapes del shell (p. ej. ``Audio\\ Hijack``)
+    o entre comillas literales.
+    """
 
     import os
+    import re
 
-    text = os.path.expandvars(str(path))
+    text = str(path).strip()
 
-    return Path(text).expanduser().resolve()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in "'\"":
+
+        text = text[1:-1]
+
+    text = os.path.expandvars(text)
+
+    expanded = Path(text).expanduser()
+
+    if expanded.exists():
+
+        return expanded.resolve()
+
+    # Ruta escapada del shell pegada literalmente: Audio\ Hijack → Audio Hijack
+    if "\\" in text:
+
+        unescaped = Path(re.sub(r"\\(.)", r"\1", text)).expanduser()
+
+        if unescaped.exists():
+
+            return unescaped.resolve()
+
+    return expanded.resolve()
 
 
 def detect_audio(path: str | Path) -> bool:

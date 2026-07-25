@@ -39,8 +39,9 @@ def main_menu() -> None:
 
     table.add_row("1", "Archivo local")
     table.add_row("2", "YouTube")
-    table.add_row("3", "Configuración")
-    table.add_row("4", "Salir")
+    table.add_row("3", "Podcast (desde .md)")
+    table.add_row("4", "Configuración")
+    table.add_row("5", "Salir")
 
     console.print(table)
 
