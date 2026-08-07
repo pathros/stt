@@ -1,22 +1,76 @@
 # Instalación de `stt` (transcripción) en Windows 11
 
-Guía para instalar en la PC de la secretaria (Dell / i5-14500 / 16 GB RAM).  
+Guía para instalar `stt` en una PC con Windows (por ejemplo la de la secretaria: Dell / i5-14500 / 16 GB RAM).  
 Abre este archivo en el Bloc de notas o en el navegador y **copia/pega** los comandos en **PowerShell**.
 
-**Usuario de ejemplo:** `Secre-alag1`  
-Si el nombre de usuario es otro, cámbialo en todas las rutas.
+---
+
+## Antes de empezar: tu nombre de usuario de Windows
+
+En esta guía aparece `Secre-alag1` solo como **ejemplo**.  
+**El nombre de usuario cambia en cada computadora** (en la PC de Edith será otro, en otra oficina otro distinto).
+
+Averígualo en PowerShell:
+
+```powershell
+$env:USERNAME
+```
+
+O mira la carpeta en el Explorador:
+
+```text
+C:\Users\
+```
+
+Ahí verás carpetas con cada usuario. Usa **el de esa PC** en todas las rutas de esta guía: proyecto, `config.json`, `Transcribir.bat` y pruebas.
+
+| En la guía (ejemplo) | En tu PC (sustituye) |
+|----------------------|----------------------|
+| `Secre-alag1` | el resultado de `$env:USERNAME` |
+
+Si copias/pegas sin cambiar el usuario, las rutas no existirán y fallará la instalación.
+
+---
+
+## Atención: `config.json` y la barra `\` en Windows
+
+En Windows es normal escribir rutas con **diagonal inversa** `\`:
+
+```text
+C:\Users\Alguien\Documents\Transcripciones
+```
+
+Pero **`config.json` no es una ruta de Windows: es JSON**. En JSON, `\` inicia un “escape” (`\n`, `\t`, etc.).  
+Una sola `\` delante de `Users` (**truena** / rompe el archivo):
+
+```text
+json.decoder.JSONDecodeError: Invalid \escape
+```
+
+Eso pasó al instalar en la PC Windows de Edith: el programa no arrancaba hasta corregir `output`.
+
+En el campo `"output"` de `config.json` usa **una** de estas formas:
+
+| Forma | Ejemplo | ¿OK? |
+|-------|---------|------|
+| Diagonal normal `/` (recomendado) | `"C:/Users/TU_USUARIO/Documents/Transcripciones"` | Sí |
+| Doble diagonal inversa `\\` | `"C:\\Users\\TU_USUARIO\\Documents\\Transcripciones"` | Sí |
+| Una sola `\` | `"C:\Users\TU_USUARIO\..."` | **No — truena** |
+
+En PowerShell o el Explorador puedes seguir usando `\`; el cuidado es **solo al editar `config.json`**. Detalle y plantilla en la [sección 6](#6-configurar-modelo-medium--español).
 
 ---
 
 ## Checklist rápida
 
 ```text
-[ ] Copiar proyecto de la USB a C:\Users\Secre-alag1\Apps\stt
+[ ] Anotar el usuario de ESTA PC ($env:USERNAME) y reemplazar Secre-alag1 en todas las rutas
+[ ] Copiar proyecto de la USB a C:\Users\TU_USUARIO\Apps\stt
 [ ] Verificar espacio en disco (≥ 10 GB libres)
 [ ] Instalar uv
 [ ] Instalar ffmpeg
 [ ] Crear entorno e instalar el programa
-[ ] Ajustar config.json (medium + es) — OJO con las barras en output
+[ ] Ajustar config.json (medium + es) — output con / o \\, NUNCA una sola \
 [ ] Crear Transcribir.bat (solo arrastrar MP3)
 [ ] Probar con --minutes 1 del MP3
 ```
@@ -27,7 +81,7 @@ Si el nombre de usuario es otro, cámbialo en todas las rutas.
 
 1. Inserta la USB.
 2. Abre la carpeta `stt-instalacion\faster-whisper` de la USB.
-3. En el Explorador de archivos ve a:
+3. En el Explorador de archivos ve a (cambia `Secre-alag1` por **tu** usuario):
 
 ```text
 C:\Users\Secre-alag1\
@@ -106,7 +160,7 @@ Debe mostrar la versión. Sin ffmpeg, muchos `.mp3` fallan.
 
 ## 5. Crear entorno e instalar el programa
 
-Copia y pega **bloque por bloque**:
+Copia y pega **bloque por bloque** (sustituye `Secre-alag1` por tu usuario de esta PC):
 
 ```powershell
 cd C:\Users\Secre-alag1\Apps\stt
@@ -145,26 +199,41 @@ uv run stt --help
 
 ## 6. Configurar modelo (`medium` + español)
 
-### Error típico: `Invalid \escape`
+### Por qué “truena” el `config.json` en Windows / PowerShell
 
-Si ves:
+Windows y PowerShell usan `\` en rutas. Eso está bien en el Explorador y en comandos como:
 
-```text
-json.decoder.JSONDecodeError: Invalid \escape: line 4 ...
+```powershell
+cd C:\Users\Secre-alag1\Apps\stt
 ```
 
-es porque en `output` pusiste una ruta de Windows con **una sola barra invertida** `\`.  
-En JSON eso es ilegal (`\U` de `\Users` no es un escape válido).
+Pero al editar **`config\config.json`**, el valor de `"output"` se interpreta como **JSON**, no como ruta de Windows.  
+Una sola diagonal inversa `\` **rompe** el archivo (caso visto en la PC de Edith):
 
-| Incorrecto (rompe) | Correcto |
-|--------------------|----------|
+```text
+json.decoder.JSONDecodeError: Invalid \escape
+```
+
+o el mensaje del programa:
+
+```text
+config.json inválido (...): ...
+En Windows, en "output" usa barras / ... o dobles \\
+```
+
+**Regla:** en `"output"` nunca una sola `\`. Usa `/` o `\\`.
+
+| Incorrecto (truena) | Correcto |
+|---------------------|----------|
 | `"C:\Users\Secre-alag1\Documents\Transcripciones"` | `"C:/Users/Secre-alag1/Documents/Transcripciones"` |
 | | o `"C:\\Users\\Secre-alag1\\Documents\\Transcripciones"` |
 | | o `"~/Downloads"` |
 
+Sustituye `Secre-alag1` por el usuario de **esa** computadora.
+
 ### Archivo correcto
 
-1. (Opcional) Crea la carpeta de salida:
+1. (Opcional) Crea la carpeta de salida (aquí sí puedes usar `\` en el Explorador):
 
 ```text
 C:\Users\Secre-alag1\Documents\Transcripciones
@@ -176,13 +245,27 @@ C:\Users\Secre-alag1\Documents\Transcripciones
 C:\Users\Secre-alag1\Apps\stt\config\config.json
 ```
 
-3. **Borra todo** y pega exactamente esto (usa `/` en la ruta):
+3. **Borra todo** y pega esto (usa `/` en `output`; cambia el usuario):
 
 ```json
 {
     "model": "medium",
     "language": "es",
     "output": "C:/Users/Secre-alag1/Documents/Transcripciones",
+    "formats": ["txt", "md"],
+    "beam_size": 5,
+    "vad_filter": true,
+    "compute_type": "int8"
+}
+```
+
+Misma ruta con `\\` (también válido):
+
+```json
+{
+    "model": "medium",
+    "language": "es",
+    "output": "C:\\Users\\Secre-alag1\\Documents\\Transcripciones",
     "formats": ["txt", "md"],
     "beam_size": 5,
     "vad_filter": true,
@@ -204,7 +287,7 @@ Si prefieres Descargas y no quieres crear carpeta:
 }
 ```
 
-4. Guarda (Ctrl+S) y cierra.
+4. Guarda (Ctrl+S) y cierra. Vuelve a abrir el archivo y confirma que en `output` no quedó ninguna `\` suelta.
 
 ---
 
@@ -231,6 +314,8 @@ uv run stt "%~1" -l es -f txt,md
 echo.
 pause
 ```
+
+(Cambia `Secre-alag1` por el usuario de esta PC antes de guardar.)
 
 4. Guarda y cierra.
 
@@ -298,7 +383,8 @@ uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_benefi
 
 | Síntoma | Qué hacer |
 |---------|-----------|
-| `Invalid \escape` / `config.json inválido` | En `output` usa `/` o `\\`, nunca una sola `\` — ver sección 6 |
+| `Invalid \escape` / `config.json inválido` | En Windows, `"output"` con `/` o `\\`; **una sola `\` truena** (pasó en la PC de Edith). Ver aviso al inicio y sección 6 |
+| Rutas “no se encuentra” al pegar comandos | El usuario de la guía (`Secre-alag1`) no es el de esa PC → usa `$env:USERNAME` |
 | `uv` no se reconoce | Nueva terminal o reiniciar Windows |
 | `ffmpeg` no se reconoce | Nueva terminal tras `winget`; `ffmpeg -version` |
 | Parece congelado en la 1ª corrida | Descarga del modelo; esperar |
@@ -319,11 +405,13 @@ uv pip install -e .
 
 ## Resumen de rutas
 
-| Qué | Ruta |
-|-----|------|
-| Proyecto | `C:\Users\Secre-alag1\Apps\stt` |
-| Config | `C:\Users\Secre-alag1\Apps\stt\config\config.json` |
-| Salida recomendada | `C:\Users\Secre-alag1\Documents\Transcripciones` |
+Sustituye `Secre-alag1` / `TU_USUARIO` por el de **esa** computadora (`$env:USERNAME`).
+
+| Qué | Ruta (ejemplo) |
+|-----|----------------|
+| Proyecto | `C:\Users\TU_USUARIO\Apps\stt` |
+| Config | `C:\Users\TU_USUARIO\Apps\stt\config\config.json` |
+| Salida en JSON (`output`) | `C:/Users/TU_USUARIO/Documents/Transcripciones` (con `/`, no `\`) |
 | Acceso (único) | Escritorio → `Transcribir.bat` (arrastrar MP3) |
 
 Modelo: **`medium`** · idioma **`es`** · compute **`int8`**.
