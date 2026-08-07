@@ -35,7 +35,18 @@ def load_config() -> Config:
 
     with open(CONFIG_PATH, encoding="utf8") as f:
 
-        data = json.load(f)
+        try:
+
+            data = json.load(f)
+
+        except json.JSONDecodeError as exc:
+
+            raise SystemExit(
+                f"config.json inválido ({CONFIG_PATH}): {exc}\n"
+                "En Windows, en \"output\" usa barras / "
+                '(ej. "C:/Users/.../Transcripciones") '
+                "o dobles \\\\ ; una sola \\ rompe el JSON."
+            ) from exc
 
     data["output"] = Path(data["output"]).expanduser()
 

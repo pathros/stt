@@ -197,7 +197,7 @@ def _run_whisper(
 
             segments.append(seg)
 
-            update(seg.end)
+            update(seg.end, seg.text)
 
     if not segments:
 
