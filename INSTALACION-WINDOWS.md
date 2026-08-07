@@ -252,12 +252,17 @@ C:\Users\Secre-alag1\Apps\stt\config\config.json
     "model": "medium",
     "language": "es",
     "output": "C:/Users/Secre-alag1/Documents/Transcripciones",
-    "formats": ["txt", "md"],
-    "beam_size": 5,
+    "formats": ["docx"],
+    "beam_size": 3,
     "vad_filter": true,
-    "compute_type": "int8"
+    "compute_type": "int8",
+    "initial_prompt": ""
 }
 ```
+
+- **`docx`**: Word abre el archivo directo (recomendado en esta PC).
+- **`beam_size`: 3**: un poco más rápido que 5 en CPU, con poca pérdida de calidad.
+- Opcional: `"formats": ["docx", "txt"]` si también quieren un `.txt` con párrafos.
 
 Misma ruta con `\\` (también válido):
 
@@ -266,10 +271,11 @@ Misma ruta con `\\` (también válido):
     "model": "medium",
     "language": "es",
     "output": "C:\\Users\\Secre-alag1\\Documents\\Transcripciones",
-    "formats": ["txt", "md"],
-    "beam_size": 5,
+    "formats": ["docx"],
+    "beam_size": 3,
     "vad_filter": true,
-    "compute_type": "int8"
+    "compute_type": "int8",
+    "initial_prompt": ""
 }
 ```
 
@@ -280,10 +286,11 @@ Si prefieres Descargas y no quieres crear carpeta:
     "model": "medium",
     "language": "es",
     "output": "~/Downloads",
-    "formats": ["txt", "md"],
-    "beam_size": 5,
+    "formats": ["docx"],
+    "beam_size": 3,
     "vad_filter": true,
-    "compute_type": "int8"
+    "compute_type": "int8",
+    "initial_prompt": ""
 }
 ```
 
@@ -310,7 +317,7 @@ if "%~1"=="" (
   pause
   exit /b 1
 )
-uv run stt "%~1" -l es -f txt,md
+uv run stt "%~1" -l es -f docx
 echo.
 pause
 ```
@@ -336,24 +343,24 @@ cd C:\Users\Secre-alag1\Apps\stt
 ```
 
 ```powershell
-uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_beneficios.mp3" -l es -f txt,md --minutes 1
+uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_beneficios.mp3" -l es -f docx --minutes 1
 ```
 
 La **primera** vez con `medium` descarga ~1.5 GB del modelo (**5–20 min** según internet).  
 **No cierres** la ventana. Luego transcribe solo 1 minuto.
 
-Revisa el `.txt` / `.md` en:
+Revisa el `.docx` en:
 
 ```text
 C:\Users\Secre-alag1\Documents\Transcripciones
 ```
 
-(o en Descargas si usaste `~/Downloads`).
+(o en Descargas si usaste `~/Downloads`). Ábrelo con Word.
 
 ### 8.2 Solo 2 minutos (misma idea)
 
 ```powershell
-uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_beneficios.mp3" -l es -f txt,md --minutes 2
+uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_beneficios.mp3" -l es -f docx --minutes 2
 ```
 
 ### 8.3 Archivo completo
@@ -363,7 +370,7 @@ Cuando ya confíen en la calidad:
 - Arrastra el MP3 encima de `Transcribir.bat`, **o**
 
 ```powershell
-uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_beneficios.mp3" -l es -f txt,md
+uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_beneficios.mp3" -l es -f docx
 ```
 
 **Expectativa:** ~2 h de audio en CPU con `medium` puede tardar **alrededor de la duración del audio** (a veces más). PC enchufada, sin suspensión.
@@ -374,8 +381,10 @@ uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_benefi
 
 1. Localizar el `.mp3` en el Explorador.
 2. Arrastrarlo encima de **Transcribir** (Escritorio).
-3. Esperar; el texto sale en `Documents\Transcripciones` (`.txt` y `.md`).
+3. Esperar; el resultado sale en `Documents\Transcripciones` como **`.docx`** (abrir con Word).
 4. La primera vez tarda más (descarga del modelo); después solo carga y transcribe.
+
+Un audio de ~2 h con `medium` en CPU puede tardar **cerca de 2 h o más**: es normal en i5 sin GPU.
 
 ---
 
@@ -383,23 +392,32 @@ uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_benefi
 
 | Síntoma | Qué hacer |
 |---------|-----------|
-| `Invalid \escape` / `config.json inválido` | En Windows, `"output"` con `/` o `\\`; **una sola `\` truena** (pasó en la PC de Edith). Ver aviso al inicio y sección 6 |
-| Rutas “no se encuentra” al pegar comandos | El usuario de la guía (`Secre-alag1`) no es el de esa PC → usa `$env:USERNAME` |
+| `Invalid \escape` / `config.json inválido` | En Windows, `"output"` con `/` o `\\`; **una sola `\` truena**. Ver sección 6 |
+| Rutas “no se encuentra” al pegar comandos | El usuario de la guía no es el de esa PC → `$env:USERNAME` |
 | `uv` no se reconoce | Nueva terminal o reiniciar Windows |
 | `ffmpeg` no se reconoce | Nueva terminal tras `winget`; `ffmpeg -version` |
 | Parece congelado en la 1ª corrida | Descarga del modelo; esperar |
-| PC muy lenta con Office + `medium` | En `config.json`: `"model": "small"` |
-| Doble clic en el bat sin archivo | Es normal: hay que **arrastrar** el MP3 encima |
+| PC muy lenta / audio de muchas horas | `"beam_size": 3` (ya recomendado) o `"model": "small"` |
+| “No puntúa” | Whisper sí puntúa; abrir el `.docx` nuevo. Si sigue plano, subir a `medium` (no `tiny`) |
+| `No module named 'docx'` | Falta dependencia: `uv pip install -e .` |
+| Doble clic en el bat sin archivo | Hay que **arrastrar** el MP3 encima |
 | OneDrive interfiere | Proyecto en `C:\Users\...\Apps\stt`, no en OneDrive |
 
 ---
 
 ## 11. Actualizar el programa más adelante
 
+Cuando haya cambios de código **y** nuevas dependencias (p. ej. Word):
+
+1. Copiar los `.py` / `pyproject.toml` actualizados (sin pisar `config\config.json` ni `.venv`).
+2. En PowerShell:
+
 ```powershell
 cd C:\Users\Secre-alag1\Apps\stt
 uv pip install -e .
 ```
+
+3. Ajustar `config.json` / `Transcribir.bat` si la guía lo indica (p. ej. `-f docx`).
 
 ---
 
@@ -412,6 +430,6 @@ Sustituye `Secre-alag1` / `TU_USUARIO` por el de **esa** computadora (`$env:USER
 | Proyecto | `C:\Users\TU_USUARIO\Apps\stt` |
 | Config | `C:\Users\TU_USUARIO\Apps\stt\config\config.json` |
 | Salida en JSON (`output`) | `C:/Users/TU_USUARIO/Documents/Transcripciones` (con `/`, no `\`) |
-| Acceso (único) | Escritorio → `Transcribir.bat` (arrastrar MP3) |
+| Acceso (único) | Escritorio → `Transcribir.bat` (arrastrar MP3 → `.docx`) |
 
-Modelo: **`medium`** · idioma **`es`** · compute **`int8`**.
+Modelo: **`medium`** · idioma **`es`** · `beam_size` **`3`** · formato **`docx`** · compute **`int8`**.

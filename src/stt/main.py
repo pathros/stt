@@ -28,7 +28,7 @@ def main():
     parser.add_argument(
         "-f", "--format",
         dest="formats",
-        help="Formato(s) de salida: txt, md, srt, vtt, json (coma para varios)",
+        help="Formato(s) de salida: txt, md, docx, srt, vtt, json (coma para varios)",
     )
 
     ts = parser.add_mutually_exclusive_group()

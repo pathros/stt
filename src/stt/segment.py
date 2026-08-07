@@ -69,11 +69,35 @@ def _paragraphs(segments: list[Segment], gap: float = 2.0) -> list[str]:
 
 
 def write_txt(segments: list[Segment], path: Path) -> None:
-    """Texto plano sin marcas de tiempo (una línea por segmento)."""
+    """Texto plano pensado para pegar/abrir en Word.
 
-    lines = [s.text.strip() for s in segments if s.text.strip()]
+    Une segmentos en párrafos (por pausas del audio) y separa párrafos
+    con línea en blanco. Así Word no hereda un salto por cada frase.
+    """
 
-    path.write_text("\n".join(lines) + "\n", encoding="utf8")
+    paragraphs = _paragraphs(segments)
+
+    path.write_text("\n\n".join(paragraphs) + "\n", encoding="utf8")
+
+
+def write_docx(
+    segments: list[Segment],
+    path: Path,
+    title: str,
+) -> None:
+    """Documento Word (.docx) con título y un párrafo por bloque de habla."""
+
+    from docx import Document
+
+    doc = Document()
+
+    doc.add_heading(title, level=1)
+
+    for paragraph in _paragraphs(segments):
+
+        doc.add_paragraph(paragraph)
+
+    doc.save(path)
 
 
 def write_md(
@@ -158,7 +182,7 @@ def write_json(segments: list[Segment], path: Path) -> None:
     )
 
 
-SUPPORTED_FORMATS = ("txt", "md", "srt", "vtt", "json")
+SUPPORTED_FORMATS = ("txt", "md", "docx", "srt", "vtt", "json")
 
 
 def write_output(
@@ -189,6 +213,10 @@ def write_output(
     elif fmt == "md":
 
         write_md(segments, path, title, timestamps)
+
+    elif fmt == "docx":
+
+        write_docx(segments, path, title)
 
     elif fmt == "srt":
 

@@ -87,6 +87,17 @@ def transcribe(
     # condicionar en el texto previo evita bucles de alucinación.
     condition_prev = cfg.vad_filter
 
+    # Guía suave de estilo (puntuación / mayúsculas) cuando el idioma es ES.
+    # Whisper ya puntúa de fábrica; esto reduce salidas “planas” en dictados.
+    initial_prompt = getattr(cfg, "initial_prompt", "") or None
+
+    if not initial_prompt and language == "es":
+
+        initial_prompt = (
+            "Transcripción en español con puntuación, comas y "
+            "mayúsculas correctas."
+        )
+
     raw_segments, info = model.transcribe(
         str(audio),
         language=language,
@@ -94,6 +105,7 @@ def transcribe(
         vad_filter=cfg.vad_filter,
         condition_on_previous_text=condition_prev,
         clip_timestamps=clip,
+        initial_prompt=initial_prompt,
     )
 
     def generator() -> Iterator[Segment]:

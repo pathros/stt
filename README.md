@@ -74,16 +74,34 @@ Si el enlace trae video y playlist, el menú pregunta qué procesar.
 
 | Formato | Descripción |
 |---------|-------------|
-| `txt`   | Texto plano (una línea por segmento) |
+| `txt`   | Texto plano en párrafos (apto para Word: sin salto por cada frase) |
 | `md`    | Markdown con párrafos por pausas |
+| `docx`  | Documento Microsoft Word (abre directo en Word) |
 | `srt`   | Subtítulos SubRip |
 | `vtt`   | WebVTT |
 | `json`  | Segmentos con `start` / `end` / `text` |
 
-Varios a la vez: `-f md,srt,json`.  
+Varios a la vez: `-f md,srt,json` o `-f docx`.  
 `-t` / `--timestamps` añade marcas de tiempo donde aplique; `--no-timestamps` las omite.
 
+En macOS el default suele ser `txt`/`md`. En Windows de oficina conviene `docx` (configurable).
+
 Salida por defecto: `~/Downloads` (configurable).
+
+### Rendimiento y puntuación (CPU)
+
+Whisper **sí puntúa** de fábrica (`medium` / `large-v3`). Si el texto “parece sin puntuación”, suele ser por mirar salidas muy fragmentadas o un modelo más chico (`tiny`/`base`).
+
+En CPU (p. ej. i5 + 16 GB) un audio de ~2 h con `medium` puede tardar **cerca de la duración del audio** (a veces más): es esperado.
+
+| Ajuste | Efecto |
+|--------|--------|
+| `model`: `small` | Más rápido, algo menos calidad/puntuación |
+| `model`: `medium` | Equilibrio recomendado en oficina |
+| `beam_size`: `3` | Más rápido que `5`, poca pérdida de calidad |
+| `beam_size`: `5` | Un poco mejor, más lento |
+| `language`: `es` | Más estable/rápido que `auto` si el audio es español |
+| `vad_filter`: `true` | Salta silencios (recomendado en habla) |
 
 ## Podcast (texto → audio)
 
@@ -149,8 +167,11 @@ Archivo: `config/config.json`
     "formats": ["txt"],
     "beam_size": 5,
     "vad_filter": true,
-    "compute_type": "int8"
+    "compute_type": "int8",
+    "initial_prompt": ""
 }
 ```
+
+`initial_prompt` vacío: si el idioma es `es`, se usa una guía breve de puntuación. Puedes poner tu propio texto o dejarlo en `""`.
 
 Editable también desde el menú (`stt` → opción 4). Los flags de CLI sobrescriben la sesión actual sin guardar.

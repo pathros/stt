@@ -17,6 +17,7 @@ dependencies = [
     "prompt_toolkit>=3.0.52",
     "PyYAML>=6.0.3",
     "edge-tts>=7.0.0",
+    "python-docx>=1.1.2",
 ]
 
 # Requisito de sistema (no instalable vía pip):

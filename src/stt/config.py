@@ -30,6 +30,9 @@ class Config:
 
     compute_type: str
 
+    # Vacío = prompt automático en español; otro texto lo sobrescribe.
+    initial_prompt: str = ""
+
 
 def load_config() -> Config:
 
@@ -47,6 +50,8 @@ def load_config() -> Config:
                 '(ej. "C:/Users/.../Transcripciones") '
                 "o dobles \\\\ ; una sola \\ rompe el JSON."
             ) from exc
+
+    data.setdefault("initial_prompt", "")
 
     data["output"] = Path(data["output"]).expanduser()
 
