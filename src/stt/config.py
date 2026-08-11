@@ -33,6 +33,9 @@ class Config:
     # Vacío = prompt automático en español; otro texto lo sobrescribe.
     initial_prompt: str = ""
 
+    # Inferencia por lotes (habla + VAD). 0 = desactivar.
+    batch_size: int = 8
+
 
 def load_config() -> Config:
 
@@ -52,6 +55,8 @@ def load_config() -> Config:
             ) from exc
 
     data.setdefault("initial_prompt", "")
+
+    data.setdefault("batch_size", 8)
 
     data["output"] = Path(data["output"]).expanduser()
 

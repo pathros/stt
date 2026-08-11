@@ -12,6 +12,8 @@ from stt.youtube import (
     get_video_info,
     list_playlist,
     fetch_captions,
+    fetch_top_comments,
+    write_comments,
     download_audio,
     VideoRef,
 )
@@ -25,6 +27,19 @@ from stt.formatter import (
     warn,
     error,
 )
+
+
+def _ask_formats(cfg: Config) -> list[str]:
+    """Pregunta formato(s) de salida mostrando las opciones posibles."""
+
+    available = ", ".join(SUPPORTED_FORMATS)
+
+    chosen = Prompt.ask(
+        f"Formato(s) de salida ({available})",
+        default=", ".join(cfg.formats),
+    )
+
+    return [f.strip() for f in chosen.split(",") if f.strip()]
 
 
 def run_menu(cfg: Config) -> None:
@@ -98,12 +113,7 @@ def handle_local(
 
     if formats is None:
 
-        chosen = Prompt.ask(
-            "Formato(s) de salida",
-            default=", ".join(cfg.formats),
-        )
-
-        formats = [f.strip() for f in chosen.split(",") if f.strip()]
+        formats = _ask_formats(cfg)
 
     if timestamps is None:
 
@@ -124,6 +134,10 @@ def handle_local(
     info(f"Archivo: {audio}")
 
     info(f"Modelo: {cfg.model} ({cfg.compute_type}, CPU) · idioma: {cfg.language}")
+
+    if cfg.vad_filter and int(getattr(cfg, "batch_size", 0) or 0) > 0:
+
+        info(f"Aceleración por lotes: batch_size={cfg.batch_size}")
 
     if not cfg.vad_filter:
 
@@ -305,6 +319,36 @@ def _whisper_youtube(
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def _save_top_comments(
+    cfg: Config,
+    video: VideoRef,
+    n: int,
+) -> None:
+    """Descarga y guarda los n comentarios más votados del video."""
+
+    with console.status(
+        f"[cyan]Obteniendo los {n} comentarios más votados…[/cyan]",
+        spinner="dots",
+    ):
+
+        comments = fetch_top_comments(video.id, n)
+
+    path = write_comments(
+        comments,
+        cfg.output,
+        safe_filename(video.title),
+        video.title,
+    )
+
+    if comments:
+
+        info(f"{len(comments)} comentario(s) más votados → {path}")
+
+    else:
+
+        warn(f"Sin comentarios disponibles → {path}")
+
+
 def _process_video(
     cfg: Config,
     video: VideoRef,
@@ -312,6 +356,7 @@ def _process_video(
     formats: list[str],
     timestamps: bool,
     use_whisper: bool,
+    most_rated_comments: int | None = None,
 ) -> None:
     """Transcribe un video: captions primero, Whisper como respaldo (o forzado)."""
 
@@ -340,11 +385,19 @@ def _process_video(
 
                 info(f"Captions {origen} ({lang}) → {p}")
 
+            if most_rated_comments is not None:
+
+                _save_top_comments(cfg, video, most_rated_comments)
+
             return
 
         warn("Sin captions disponibles; usando Whisper como respaldo…")
 
     _whisper_youtube(cfg, video, formats, timestamps)
+
+    if most_rated_comments is not None:
+
+        _save_top_comments(cfg, video, most_rated_comments)
 
 
 def handle_youtube(
@@ -353,6 +406,7 @@ def handle_youtube(
     formats: list[str] | None = None,
     timestamps: bool | None = None,
     use_whisper: bool = False,
+    most_rated_comments: int | None = None,
 ) -> None:
     """Ingesta desde una URL de YouTube (video o playlist)."""
 
@@ -386,12 +440,7 @@ def handle_youtube(
 
     if formats is None:
 
-        chosen = Prompt.ask(
-            "Formato(s) de salida",
-            default=", ".join(cfg.formats),
-        )
-
-        formats = [f.strip() for f in chosen.split(",") if f.strip()]
+        formats = _ask_formats(cfg)
 
     if timestamps is None:
 
@@ -409,11 +458,24 @@ def handle_youtube(
 
         return
 
+    if most_rated_comments is not None and most_rated_comments <= 0:
+
+        error("--with-most-rated-comments requiere un entero positivo.")
+
+        return
+
     info(f"{len(videos)} video(s) a procesar.")
 
     if use_whisper:
 
         warn("Modo Whisper forzado: se ignoran los captions de YouTube.")
+
+    if most_rated_comments is not None:
+
+        info(
+            f"También se guardarán los {most_rated_comments} "
+            "comentarios más votados de cada video."
+        )
 
     languages = _caption_languages(cfg)
 
@@ -423,7 +485,15 @@ def handle_youtube(
 
         try:
 
-            _process_video(cfg, video, languages, formats, timestamps, use_whisper)
+            _process_video(
+                cfg,
+                video,
+                languages,
+                formats,
+                timestamps,
+                use_whisper,
+                most_rated_comments=most_rated_comments,
+            )
 
         except Exception as exc:  # noqa: BLE001
 
@@ -602,7 +672,7 @@ def handle_config(cfg: Config) -> None:
     )
 
     formats = Prompt.ask(
-        "Formatos (separados por coma)",
+        f"Formatos ({', '.join(SUPPORTED_FORMATS)}; separados por coma)",
         default=", ".join(cfg.formats),
     )
 

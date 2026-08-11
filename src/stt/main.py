@@ -2,6 +2,7 @@ import argparse
 
 from stt.config import load_config
 from stt.cli import run_menu, handle_local, handle_youtube, handle_podcast
+from stt.youtube import DEFAULT_MOST_RATED_COMMENTS
 
 
 def main():
@@ -76,6 +77,19 @@ def main():
     )
 
     parser.add_argument(
+        "--with-most-rated-comments",
+        nargs="?",
+        const=DEFAULT_MOST_RATED_COMMENTS,
+        default=None,
+        type=int,
+        metavar="N",
+        help=(
+            "YouTube: guardar los N comentarios con más likes por video "
+            f"(default: {DEFAULT_MOST_RATED_COMMENTS}; también en playlists)"
+        ),
+    )
+
+    parser.add_argument(
         "--no-vad",
         dest="vad_filter",
         action="store_false",
@@ -142,6 +156,7 @@ def main():
             formats=formats,
             timestamps=timestamps,
             use_whisper=args.whisper,
+            most_rated_comments=args.with_most_rated_comments,
         )
 
     elif _is_youtube_url(args.source):
@@ -152,6 +167,7 @@ def main():
             formats=formats,
             timestamps=timestamps,
             use_whisper=args.whisper,
+            most_rated_comments=args.with_most_rated_comments,
         )
 
     else:

@@ -7,6 +7,9 @@ from urllib.parse import urlparse, parse_qs
 from stt.segment import Segment
 
 
+DEFAULT_MOST_RATED_COMMENTS = 10
+
+
 @dataclass(slots=True)
 class VideoRef:
     """Referencia mínima a un video de YouTube."""
@@ -25,6 +28,19 @@ class ParsedUrl:
     video_id: str | None
 
     playlist_id: str | None
+
+
+@dataclass(slots=True)
+class Comment:
+    """Comentario de YouTube con su conteo de likes."""
+
+    id: str
+
+    author: str
+
+    text: str
+
+    like_count: int
 
 
 def parse_youtube_url(url: str) -> ParsedUrl:
@@ -211,3 +227,127 @@ def download_audio(url: str, out_dir: Path) -> Path:
         info = ydl.extract_info(url, download=True)
 
     return out_dir / f"{info['id']}.wav"
+
+
+def fetch_top_comments(
+    video_id: str,
+    n: int = DEFAULT_MOST_RATED_COMMENTS,
+) -> list[Comment]:
+    """Obtiene los n comentarios raíz con más likes del video.
+
+    Usa la ordenación «top» de YouTube vía yt-dlp y reordena por
+    ``like_count``. Devuelve lista vacía si no hay comentarios o fallan.
+    """
+
+    if n <= 0:
+
+        return []
+
+    from yt_dlp import YoutubeDL
+
+    # Pedimos un lote mayor que n: el «top» de YouTube no es solo likes.
+    fetch_limit = max(n * 5, 50)
+
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "skip_download": True,
+        "getcomments": True,
+        "extractor_args": {
+            "youtube": {
+                # max_comments, max_parents, max_replies
+                "max_comments": [str(fetch_limit), str(fetch_limit), "0"],
+                "comment_sort": ["top"],
+            }
+        },
+    }
+
+    try:
+
+        with YoutubeDL(opts) as ydl:
+
+            info = ydl.extract_info(watch_url(video_id), download=False)
+
+    except Exception:  # noqa: BLE001
+
+        return []
+
+    comments: list[Comment] = []
+
+    for raw in info.get("comments") or []:
+
+        if not raw:
+
+            continue
+
+        parent = raw.get("parent")
+
+        if parent not in (None, "root"):
+
+            continue
+
+        text = (raw.get("text") or "").strip()
+
+        if not text:
+
+            continue
+
+        try:
+
+            likes = int(raw.get("like_count") or 0)
+
+        except (TypeError, ValueError):
+
+            likes = 0
+
+        comments.append(
+            Comment(
+                id=str(raw.get("id") or ""),
+                author=(raw.get("author") or "Anónimo").strip() or "Anónimo",
+                text=text,
+                like_count=max(likes, 0),
+            )
+        )
+
+    comments.sort(key=lambda c: c.like_count, reverse=True)
+
+    return comments[:n]
+
+
+def write_comments(
+    comments: list[Comment],
+    out_dir: Path,
+    stem: str,
+    title: str,
+) -> Path:
+    """Escribe los comentarios más votados en Markdown junto a la transcripción."""
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    path = out_dir / f"{stem}-comments.md"
+
+    lines = [f"# Comentarios más votados — {title}", ""]
+
+    if not comments:
+
+        lines.append("_No se encontraron comentarios._")
+
+        lines.append("")
+
+    else:
+
+        for i, comment in enumerate(comments, start=1):
+
+            lines.append(
+                f"## {i}. {comment.author} ({comment.like_count} likes)"
+            )
+
+            lines.append("")
+
+            lines.append(comment.text)
+
+            lines.append("")
+
+    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf8")
+
+    return path

@@ -253,15 +253,17 @@ C:\Users\Secre-alag1\Apps\stt\config\config.json
     "language": "es",
     "output": "C:/Users/Secre-alag1/Documents/Transcripciones",
     "formats": ["docx"],
-    "beam_size": 3,
+    "beam_size": 2,
     "vad_filter": true,
     "compute_type": "int8",
-    "initial_prompt": ""
+    "initial_prompt": "",
+    "batch_size": 8
 }
 ```
 
 - **`docx`**: Word abre el archivo directo (recomendado en esta PC).
-- **`beam_size`: 3**: un poco más rápido que 5 en CPU, con poca pérdida de calidad.
+- **`beam_size`: 2**: más rápido que 5 en CPU; calidad casi igual en dictados claros (alternativa: `3`).
+- **`batch_size`: 8**: acelera reuniones/habla (con VAD). Pon `0` solo si hay problemas.
 - Opcional: `"formats": ["docx", "txt"]` si también quieren un `.txt` con párrafos.
 
 Misma ruta con `\\` (también válido):
@@ -272,10 +274,11 @@ Misma ruta con `\\` (también válido):
     "language": "es",
     "output": "C:\\Users\\Secre-alag1\\Documents\\Transcripciones",
     "formats": ["docx"],
-    "beam_size": 3,
+    "beam_size": 2,
     "vad_filter": true,
     "compute_type": "int8",
-    "initial_prompt": ""
+    "initial_prompt": "",
+    "batch_size": 8
 }
 ```
 
@@ -287,10 +290,11 @@ Si prefieres Descargas y no quieres crear carpeta:
     "language": "es",
     "output": "~/Downloads",
     "formats": ["docx"],
-    "beam_size": 3,
+    "beam_size": 2,
     "vad_filter": true,
     "compute_type": "int8",
-    "initial_prompt": ""
+    "initial_prompt": "",
+    "batch_size": 8
 }
 ```
 
@@ -432,4 +436,4 @@ Sustituye `Secre-alag1` / `TU_USUARIO` por el de **esa** computadora (`$env:USER
 | Salida en JSON (`output`) | `C:/Users/TU_USUARIO/Documents/Transcripciones` (con `/`, no `\`) |
 | Acceso (único) | Escritorio → `Transcribir.bat` (arrastrar MP3 → `.docx`) |
 
-Modelo: **`medium`** · idioma **`es`** · `beam_size` **`3`** · formato **`docx`** · compute **`int8`**.
+Modelo: **`medium`** · idioma **`es`** · `beam_size` **`2`** · `batch_size` **`8`** · formato **`docx`** · compute **`int8`**.

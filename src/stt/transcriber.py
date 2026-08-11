@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Iterator
 
 from stt.segment import Segment
 
 
-_MODEL_CACHE: dict[tuple[str, str], object] = {}
+_MODEL_CACHE: dict[tuple[str, str, int], object] = {}
 
 # Marcas de agua / créditos que Whisper inventa con frecuencia en música.
 _HALLUCINATION_PHRASES = (
@@ -21,6 +22,8 @@ _HALLUCINATION_PHRASES = (
     "подписывайтесь",
 )
 
+_SAMPLE_RATE = 16_000
+
 
 def _is_hallucination(text: str) -> bool:
     """Detecta frases típicas de alucinación de Whisper (créditos, outros)."""
@@ -34,14 +37,30 @@ def _is_hallucination(text: str) -> bool:
     return any(phrase in lowered for phrase in _HALLUCINATION_PHRASES)
 
 
+def _cpu_threads() -> int:
+    """Hilos para CTranslate2.
+
+    En CPUs híbridos (p. ej. i5-14500 con 20 lógicos) saturar todos suele
+    ir peor que usar un tope razonable (~8).
+    """
+
+    n = os.cpu_count() or 4
+
+    if n >= 12:
+
+        return 8
+
+    return max(4, n)
+
+
 def _get_model(cfg):
     """Carga (y cachea) el modelo de faster-whisper en CPU."""
 
-    import os
-
     from faster_whisper import WhisperModel
 
-    key = (cfg.model, cfg.compute_type)
+    threads = _cpu_threads()
+
+    key = (cfg.model, cfg.compute_type, threads)
 
     if key not in _MODEL_CACHE:
 
@@ -49,10 +68,43 @@ def _get_model(cfg):
             cfg.model,
             device="cpu",
             compute_type=cfg.compute_type,
-            cpu_threads=os.cpu_count() or 4,
+            cpu_threads=threads,
+            num_workers=1,
         )
 
     return _MODEL_CACHE[key]
+
+
+def _initial_prompt(cfg, language: str | None) -> str | None:
+    """Guía suave de estilo; vacío en config = default solo para español."""
+
+    prompt = getattr(cfg, "initial_prompt", "") or None
+
+    if prompt:
+
+        return prompt
+
+    if language == "es":
+
+        return (
+            "Transcripción en español con puntuación, comas y "
+            "mayúsculas correctas."
+        )
+
+    return None
+
+
+def _segment_generator(raw_segments) -> Iterator[Segment]:
+
+    for s in raw_segments:
+
+        text = (s.text or "").strip()
+
+        if not text or _is_hallucination(text):
+
+            continue
+
+        yield Segment(start=s.start, end=s.end, text=s.text)
 
 
 def transcribe(
@@ -66,58 +118,73 @@ def transcribe(
     consumir para obtener los segmentos (permite mostrar progreso).
 
     `minutes`: si se indica, solo transcribe los primeros N minutos
-    (vista previa) usando clip_timestamps.
+    (vista previa).
 
-    Con ``vad_filter=False`` (recomendado para canciones/música) también
-    desactiva ``condition_on_previous_text`` para evitar alucinaciones
-    típicas ("Субтитры сделал…", "Thanks for watching", etc.).
+    Con VAD activado usa inferencia por lotes (más rápida en CPU) si
+    ``batch_size`` > 0. Con ``--no-vad`` (canciones) usa el camino
+    secuencial: el batch exige VAD o clips explícitos.
+
+    ``condition_on_previous_text`` va en False para evitar bucles donde
+    se repite la misma línea aunque el audio ya cambió.
     """
 
     model = _get_model(cfg)
 
     language = None if cfg.language == "auto" else cfg.language
 
-    clip = "0"
+    prompt = _initial_prompt(cfg, language)
 
-    if minutes:
+    batch_size = int(getattr(cfg, "batch_size", 8) or 0)
 
-        clip = f"0,{float(minutes) * 60:.3f}"
+    # Batch + VAD = camino rápido para habla/reuniones.
+    # Sin VAD (música) → secuencial.
+    use_batch = bool(cfg.vad_filter and batch_size > 0)
 
-    # En música el VAD suele tirar casi todo el audio; sin VAD, no
-    # condicionar en el texto previo evita bucles de alucinación.
-    condition_prev = cfg.vad_filter
+    if use_batch:
 
-    # Guía suave de estilo (puntuación / mayúsculas) cuando el idioma es ES.
-    # Whisper ya puntúa de fábrica; esto reduce salidas “planas” en dictados.
-    initial_prompt = getattr(cfg, "initial_prompt", "") or None
+        from faster_whisper import BatchedInferencePipeline
 
-    if not initial_prompt and language == "es":
+        pipeline = BatchedInferencePipeline(model=model)
 
-        initial_prompt = (
-            "Transcripción en español con puntuación, comas y "
-            "mayúsculas correctas."
+        clip_timestamps = None
+
+        if minutes:
+
+            # Muestras a 16 kHz (formato que espera el pipeline por lotes).
+            end = int(float(minutes) * 60 * _SAMPLE_RATE)
+
+            clip_timestamps = [{"start": 0, "end": max(end, 1)}]
+
+        raw_segments, info = pipeline.transcribe(
+            str(audio),
+            language=language,
+            beam_size=cfg.beam_size,
+            best_of=1,
+            vad_filter=clip_timestamps is None,
+            condition_on_previous_text=False,
+            initial_prompt=prompt,
+            batch_size=batch_size,
+            clip_timestamps=clip_timestamps,
+            without_timestamps=False,
         )
 
-    raw_segments, info = model.transcribe(
-        str(audio),
-        language=language,
-        beam_size=cfg.beam_size,
-        vad_filter=cfg.vad_filter,
-        condition_on_previous_text=condition_prev,
-        clip_timestamps=clip,
-        initial_prompt=initial_prompt,
-    )
+    else:
 
-    def generator() -> Iterator[Segment]:
+        clip = "0"
 
-        for s in raw_segments:
+        if minutes:
 
-            text = (s.text or "").strip()
+            clip = f"0,{float(minutes) * 60:.3f}"
 
-            if not text or _is_hallucination(text):
+        raw_segments, info = model.transcribe(
+            str(audio),
+            language=language,
+            beam_size=cfg.beam_size,
+            best_of=1,
+            vad_filter=cfg.vad_filter,
+            condition_on_previous_text=False,
+            clip_timestamps=clip,
+            initial_prompt=prompt,
+        )
 
-                continue
-
-            yield Segment(start=s.start, end=s.end, text=s.text)
-
-    return info, generator()
+    return info, _segment_generator(raw_segments)

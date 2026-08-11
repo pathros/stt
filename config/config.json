@@ -3,7 +3,7 @@
     "language": "auto",
     "output": "~/Downloads",
     "formats": [
-        "txt"
+        "md"
     ],
     "beam_size": 5,
     "vad_filter": true,

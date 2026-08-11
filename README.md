@@ -66,9 +66,12 @@ Primero intenta captions del video; si no hay, usa Whisper.
 stt "https://www.youtube.com/watch?v=…"
 stt youtube "https://youtu.be/…" -f txt,srt
 stt "https://…" --whisper           # fuerza Whisper (ignora captions)
+stt "https://…" --with-most-rated-comments      # top 10 comentarios (default)
+stt "https://…" --with-most-rated-comments 25   # top N configurable
 ```
 
-Si el enlace trae video y playlist, el menú pregunta qué procesar.
+Si el enlace trae video y playlist, el menú pregunta qué procesar.  
+Con `--with-most-rated-comments`, en playlists se guardan los comentarios top de **cada** video (`*-comments.md` junto a la transcripción).
 
 ## Formatos de salida
 
@@ -84,7 +87,7 @@ Si el enlace trae video y playlist, el menú pregunta qué procesar.
 Varios a la vez: `-f md,srt,json` o `-f docx`.  
 `-t` / `--timestamps` añade marcas de tiempo donde aplique; `--no-timestamps` las omite.
 
-En macOS el default suele ser `txt`/`md`. En Windows de oficina conviene `docx` (configurable).
+En macOS el default es `md`. En Windows de oficina conviene `docx` (configurable).
 
 Salida por defecto: `~/Downloads` (configurable).
 
@@ -98,10 +101,13 @@ En CPU (p. ej. i5 + 16 GB) un audio de ~2 h con `medium` puede tardar **cerca de
 |--------|--------|
 | `model`: `small` | Más rápido, algo menos calidad/puntuación |
 | `model`: `medium` | Equilibrio recomendado en oficina |
-| `beam_size`: `3` | Más rápido que `5`, poca pérdida de calidad |
+| `beam_size`: `2` | Buen atajo de velocidad; poca pérdida vs `5` |
 | `beam_size`: `5` | Un poco mejor, más lento |
+| `batch_size`: `8` | Lotes en CPU (habla + VAD); suele ~1.5–2× |
+| `batch_size`: `0` | Desactiva lotes (p. ej. depuración) |
 | `language`: `es` | Más estable/rápido que `auto` si el audio es español |
 | `vad_filter`: `true` | Salta silencios (recomendado en habla) |
+| `--no-vad` | Canciones/música; sin lotes (el batch necesita VAD) |
 
 ## Podcast (texto → audio)
 
@@ -152,6 +158,7 @@ También acepta monólogo (`voice: Paulina`), `speakers:` / `speaker:` en el fro
 | `-o`, `--output` | Carpeta de salida |
 | `--minutes N` | Vista previa: solo los primeros N minutos (local) |
 | `--whisper` | YouTube: forzar Whisper |
+| `--with-most-rated-comments [N]` | YouTube: top N comentarios por likes (default 10; también en playlists) |
 | `--no-vad` | Desactiva VAD (mejor para canciones/música) |
 | `--rate N` | Podcast: palabras por minuto |
 
@@ -164,14 +171,16 @@ Archivo: `config/config.json`
     "model": "large-v3",
     "language": "auto",
     "output": "~/Downloads",
-    "formats": ["txt"],
+    "formats": ["md"],
     "beam_size": 5,
     "vad_filter": true,
     "compute_type": "int8",
-    "initial_prompt": ""
+    "initial_prompt": "",
+    "batch_size": 8
 }
 ```
 
-`initial_prompt` vacío: si el idioma es `es`, se usa una guía breve de puntuación. Puedes poner tu propio texto o dejarlo en `""`.
+`initial_prompt` vacío: si el idioma es `es`, se usa una guía breve de puntuación.  
+`batch_size` > 0 acelera habla con VAD; con `--no-vad` (canciones) se ignora y va en modo secuencial.
 
 Editable también desde el menú (`stt` → opción 4). Los flags de CLI sobrescriben la sesión actual sin guardar.
