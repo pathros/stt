@@ -28,6 +28,18 @@ Ahí verás carpetas con cada usuario. Usa **el de esa PC** en todas las rutas d
 |----------------------|----------------------|
 | `Secre-alag1` | el resultado de `$env:USERNAME` |
 
+Si el usuario tiene **espacios** (ej. `Edith quijano`), en PowerShell y en el `.bat` las rutas van **entre comillas**:
+
+```powershell
+cd "C:\Users\Edith quijano\Apps\stt"
+```
+
+En JSON (`config.json`) usa `/` y no hace falta escapar el espacio:
+
+```json
+"output": "C:/Users/Edith quijano/Documents/Transcripciones"
+```
+
 Si copias/pegas sin cambiar el usuario, las rutas no existirán y fallará la instalación.
 
 ---
@@ -69,9 +81,10 @@ En PowerShell o el Explorador puedes seguir usando `\`; el cuidado es **solo al 
 [ ] Verificar espacio en disco (≥ 10 GB libres)
 [ ] Instalar uv
 [ ] Instalar ffmpeg
-[ ] Crear entorno e instalar el programa
+[ ] Crear entorno: uv python install / pin / venv
+[ ] **uv pip install -e .** y verificar `.venv\Scripts\stt.exe`
 [ ] Ajustar config.json (medium + es) — output con / o \\, NUNCA una sola \
-[ ] Crear Transcribir.bat (solo arrastrar MP3)
+[ ] Crear Transcribir.bat que llama a stt.exe (NO uv run)
 [ ] Probar con --minutes 1 del MP3
 ```
 
@@ -182,6 +195,8 @@ uv venv
 uv pip install -e .
 ```
 
+**Este paso es obligatorio.** Sin él no existe `stt.exe` y el acceso directo falla con errores del tipo `could not spawn stt` / `not found`.
+
 Tiempos aproximados:
 
 | Paso | Tiempo |
@@ -189,12 +204,28 @@ Tiempos aproximados:
 | `uv python install 3.12` | 1–3 min |
 | `uv pip install -e .` | 2–10 min |
 
-Verificar que el comando existe:
+### Verificación (no saltar)
+
+En la misma carpeta del proyecto:
+
+```powershell
+cd C:\Users\Secre-alag1\Apps\stt
+dir .venv\Scripts\stt.exe
+```
+
+Debe listar el archivo `stt.exe`. Si dice que no existe, repite `uv pip install -e .`.
+
+Prueba en PowerShell (sí puede usar `uv run` aquí):
 
 ```powershell
 uv run stt --help
 ```
 
+o, más fiable (igual que el `.bat`):
+
+```powershell
+.\.venv\Scripts\stt.exe --help
+```
 ---
 
 ## 6. Configurar modelo (`medium` + español)
@@ -304,35 +335,61 @@ Si prefieres Descargas y no quieres crear carpeta:
 
 ## 7. Un solo acceso: arrastrar el MP3
 
-Basta **un** acceso en el Escritorio: arrastras el `.mp3` encima del icono.
+**No uses `uv run` en el `.bat` del Escritorio.** Al arrastrar un archivo, Windows abre la consola con un PATH incompleto y aparece `could not spawn stt` / `not found`. El acceso debe llamar a `stt.exe` dentro de `.venv`.
+
+### Opción A (recomendada): copiar el `.bat` del proyecto
+
+1. En el proyecto ya viene `Transcribir.bat`.
+2. Ábrelo con Bloc de notas y cambia `Secre-alag1` por el usuario de **esta** PC en la línea `STT_HOME`.
+3. Cópialo al **Escritorio**.
+
+### Opción B: crearlo a mano en el Escritorio
 
 1. Escritorio → clic derecho → Nuevo → Documento de texto.
 2. Nómbralo `Transcribir.bat` (extensión `.bat`, no `.txt`).
-3. Clic derecho → Editar, pega **exactamente**:
+3. Clic derecho → Editar, pega **exactamente** (cambia el usuario):
 
 ```bat
 @echo off
-cd /d C:\Users\Secre-alag1\Apps\stt
-if "%~1"=="" (
-  echo.
-  echo  Arrastra un archivo de audio o video encima de este icono.
-  echo  Ejemplo: un .mp3
-  echo.
+setlocal
+set "STT_HOME=C:\Users\Edith quijano\Apps\stt"
+set "STT_EXE=%STT_HOME%\.venv\Scripts\stt.exe"
+
+cd /d "%STT_HOME%" 2>nul
+if errorlevel 1 (
+  echo ERROR: No existe %STT_HOME%
   pause
   exit /b 1
 )
-uv run stt "%~1" -l es -f docx
+
+if not exist "%STT_EXE%" (
+  echo ERROR: No se encuentra stt.exe
+  echo Ejecuta en PowerShell:
+  echo   cd "C:\Users\Edith quijano\Apps\stt"
+  echo   uv pip install -e .
+  echo   dir .\.venv\Scripts\stt.exe
+  pause
+  exit /b 1
+)
+
+if "%~1"=="" (
+  echo Arrastra un archivo .mp3 encima de este icono.
+  pause
+  exit /b 1
+)
+
+"%STT_EXE%" "%~1" -l es -f docx
 echo.
 pause
 ```
 
-(Cambia `Secre-alag1` por el usuario de esta PC antes de guardar.)
-
+(El espacio en `Edith quijano` está bien; las comillas de `set "STT_HOME=..."` lo protegen.)
 4. Guarda y cierra.
 
-**Uso:** arrastra `Agricultura_organica_Riesgos_y_beneficios.mp3` (o cualquier audio) **encima** de `Transcribir.bat`.
+**Uso:** arrastra el `.mp3` **encima** de `Transcribir.bat`.
 
-Si solo haces doble clic sin arrastrar, te avisará que hay que soltar un archivo.
+Si solo haces doble clic sin arrastrar, te avisará que hay que soltar un archivo.  
+Si falta la instalación, el propio `.bat` te dirá que ejecutes `uv pip install -e .`.
 
 ---
 
@@ -396,12 +453,13 @@ Un audio de ~2 h con `medium` en CPU puede tardar **cerca de 2 h o más**: es no
 
 | Síntoma | Qué hacer |
 |---------|-----------|
+| `could not spawn stt` / `not found` al usar el `.bat` | 1) Verificar `dir C:\Users\...\Apps\stt\.venv\Scripts\stt.exe`. Si no existe: `uv pip install -e .`. 2) Reemplazar el `.bat` del Escritorio por el que llama a `stt.exe` (sección 7), no `uv run stt`. |
 | `Invalid \escape` / `config.json inválido` | En Windows, `"output"` con `/` o `\\`; **una sola `\` truena**. Ver sección 6 |
 | Rutas “no se encuentra” al pegar comandos | El usuario de la guía no es el de esa PC → `$env:USERNAME` |
 | `uv` no se reconoce | Nueva terminal o reiniciar Windows |
 | `ffmpeg` no se reconoce | Nueva terminal tras `winget`; `ffmpeg -version` |
 | Parece congelado en la 1ª corrida | Descarga del modelo; esperar |
-| PC muy lenta / audio de muchas horas | `"beam_size": 3` (ya recomendado) o `"model": "small"` |
+| PC muy lenta / audio de muchas horas | `"beam_size": 2` o `"model": "small"` |
 | “No puntúa” | Whisper sí puntúa; abrir el `.docx` nuevo. Si sigue plano, subir a `medium` (no `tiny`) |
 | `No module named 'docx'` | Falta dependencia: `uv pip install -e .` |
 | Doble clic en el bat sin archivo | Hay que **arrastrar** el MP3 encima |
