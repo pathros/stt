@@ -15,6 +15,7 @@ from stt.youtube import (
     fetch_top_comments,
     write_comments,
     download_audio,
+    DownloadCancelled,
     VideoRef,
 )
 from stt.formatter import (
@@ -294,16 +295,42 @@ def _whisper_youtube(
     import shutil
     import tempfile
 
+    from stt.progress import youtube_download_progress
+
     tmp = Path(tempfile.mkdtemp(prefix="stt_yt_"))
 
     try:
 
-        with console.status(
-            "[cyan]Descargando audio del video…[/cyan]",
-            spinner="dots",
-        ):
+        try:
 
-            audio = download_audio(video.url, tmp)
+            with youtube_download_progress() as dl:
+
+                audio = download_audio(
+                    video.url,
+                    tmp,
+                    on_progress=dl.on_progress,
+                    should_cancel=dl.should_cancel,
+                )
+
+        except DownloadCancelled:
+
+            warn("Descarga cancelada.")
+
+            return
+
+        except Exception as exc:  # noqa: BLE001
+
+            msg = str(exc)
+
+            if "timed out" in msg.lower() or "timeout" in msg.lower():
+
+                error(
+                    "Timeout al descargar el audio desde el CDN de YouTube "
+                    "(googlevideo). Suele ser red/ISP o VPN; reintenta más "
+                    "tarde o prueba otra red."
+                )
+
+            raise
 
         _run_whisper(
             cfg,

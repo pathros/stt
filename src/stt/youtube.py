@@ -197,23 +197,66 @@ def fetch_captions(
     return segments, transcript.language_code, transcript.is_generated
 
 
-def download_audio(url: str, out_dir: Path) -> Path:
+class DownloadCancelled(Exception):
+    """El usuario canceló la descarga de audio de YouTube."""
+
+
+def download_audio(
+    url: str,
+    out_dir: Path,
+    *,
+    on_progress=None,
+    should_cancel=None,
+) -> Path:
     """Descarga el mejor audio del video y lo extrae a WAV con ffmpeg.
 
     Se usa como respaldo cuando el video no tiene captions y se
     transcribirá con faster-whisper (paso 2).
+
+    ``on_progress`` recibe el dict del progress hook de yt-dlp.
+    ``should_cancel`` se consulta tras metadata y en cada hook; si
+    devuelve True se lanza ``DownloadCancelled``.
     """
 
     from yt_dlp import YoutubeDL
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    def _check_cancel() -> None:
+
+        if should_cancel is not None and should_cancel():
+
+            raise DownloadCancelled("Descarga cancelada por el usuario.")
+
+    def _hook(d: dict) -> None:
+
+        _check_cancel()
+
+        if on_progress is not None:
+
+            on_progress(d)
+
     opts = {
         "quiet": True,
         "no_warnings": True,
         "noprogress": True,
-        "format": "bestaudio/best",
+        # Preferir contenedores de audio estables; el CDN a veces
+        # corta conexiones y conviene reintentar con más paciencia.
+        "format": "bestaudio[ext=m4a]/bestaudio/best",
         "outtmpl": str(out_dir / "%(id)s.%(ext)s"),
+        "socket_timeout": 60,
+        "retries": 15,
+        "fragment_retries": 15,
+        "file_access_retries": 5,
+        "extractor_retries": 5,
+        # node/bun suelen estar en el PATH; deno es el default de yt-dlp.
+        "js_runtimes": {"node": {}, "bun": {}, "deno": {}},
+        "progress_hooks": [_hook],
+        "retry_sleep_functions": {
+            "http": lambda n: min(2 ** n, 30),
+            "fragment": lambda n: min(2 ** n, 30),
+            "extractor": lambda n: min(2 ** n, 20),
+        },
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -224,7 +267,12 @@ def download_audio(url: str, out_dir: Path) -> Path:
 
     with YoutubeDL(opts) as ydl:
 
-        info = ydl.extract_info(url, download=True)
+        # Metadata primero: permite abortar con "x" antes del CDN.
+        info = ydl.extract_info(url, download=False)
+
+        _check_cancel()
+
+        ydl.process_ie_result(info, download=True)
 
     return out_dir / f"{info['id']}.wav"
 
