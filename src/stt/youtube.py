@@ -73,6 +73,78 @@ def watch_url(video_id: str) -> str:
     return f"https://www.youtube.com/watch?v={video_id}"
 
 
+def parse_cookies_from_browser(spec: str) -> tuple:
+    """Convierte ``chrome`` / ``safari`` / ``chrome:Default`` al tuple de yt-dlp."""
+
+    import re
+
+    from yt_dlp.cookies import SUPPORTED_BROWSERS
+
+    text = (spec or "").strip()
+
+    if not text:
+
+        raise ValueError("Navegador vacío para --cookies-from-browser")
+
+    mobj = re.fullmatch(
+        r"""(?x)
+            (?P<name>[^+:]+)
+            (?:\s*\+\s*(?P<keyring>[^:]+))?
+            (?:\s*:\s*(?!:)(?P<profile>.+?))?
+            (?:\s*::\s*(?P<container>.+))?
+        """,
+        text,
+    )
+
+    if mobj is None:
+
+        raise ValueError(
+            f"Valor inválido para --cookies-from-browser: {spec!r} "
+            "(ej. chrome, safari, firefox, chrome:Default)"
+        )
+
+    browser_name, keyring, profile, container = mobj.group(
+        "name", "keyring", "profile", "container"
+    )
+
+    browser_name = browser_name.lower()
+
+    if browser_name not in SUPPORTED_BROWSERS:
+
+        supported = ", ".join(sorted(SUPPORTED_BROWSERS))
+
+        raise ValueError(
+            f"Navegador no soportado: {browser_name!r}. Usa: {supported}"
+        )
+
+    if keyring is not None:
+
+        keyring = keyring.upper()
+
+    return (browser_name, profile, keyring, container)
+
+
+def _cookie_opts(
+    cookies_from_browser: str | None = None,
+    cookies_file: str | Path | None = None,
+) -> dict:
+    """Opciones yt-dlp para autenticar con cookies del navegador o archivo."""
+
+    opts: dict = {}
+
+    if cookies_file:
+
+        opts["cookiefile"] = str(Path(cookies_file).expanduser())
+
+    if cookies_from_browser:
+
+        opts["cookiesfrombrowser"] = parse_cookies_from_browser(
+            cookies_from_browser
+        )
+
+    return opts
+
+
 def get_video_info(url_or_id: str) -> VideoRef:
     """Obtiene id y título de un solo video (metadata, sin descarga)."""
 
@@ -207,6 +279,8 @@ def download_audio(
     *,
     on_progress=None,
     should_cancel=None,
+    cookies_from_browser: str | None = None,
+    cookies_file: str | Path | None = None,
 ) -> Path:
     """Descarga el mejor audio del video y lo extrae a WAV con ffmpeg.
 
@@ -216,6 +290,9 @@ def download_audio(
     ``on_progress`` recibe el dict del progress hook de yt-dlp.
     ``should_cancel`` se consulta tras metadata y en cada hook; si
     devuelve True se lanza ``DownloadCancelled``.
+
+    ``cookies_from_browser`` / ``cookies_file`` mitigan el anti-bot
+    de YouTube (``Sign in to confirm you're not a bot``).
     """
 
     from yt_dlp import YoutubeDL
@@ -251,6 +328,13 @@ def download_audio(
         "extractor_retries": 5,
         # node/bun suelen estar en el PATH; deno es el default de yt-dlp.
         "js_runtimes": {"node": {}, "bun": {}, "deno": {}},
+        # android_vr (default actual) suele devolver URLs que caen en 403;
+        # android/tv_embedded suelen funcionar sin cookies/PO token.
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "tv_embedded"],
+            }
+        },
         "progress_hooks": [_hook],
         "retry_sleep_functions": {
             "http": lambda n: min(2 ** n, 30),
@@ -264,6 +348,13 @@ def download_audio(
             }
         ],
     }
+
+    opts.update(
+        _cookie_opts(
+            cookies_from_browser=cookies_from_browser,
+            cookies_file=cookies_file,
+        )
+    )
 
     with YoutubeDL(opts) as ydl:
 

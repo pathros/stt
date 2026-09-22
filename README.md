@@ -68,10 +68,14 @@ stt youtube "https://youtu.be/…" -f txt,srt
 stt "https://…" --whisper           # fuerza Whisper (ignora captions)
 stt "https://…" --with-most-rated-comments      # top 10 comentarios (default)
 stt "https://…" --with-most-rated-comments 25   # top N configurable
+stt "https://…" --cookies-from-browser chrome   # anti-bot (playlist larga)
+stt "https://…" --cookies-from-browser safari
 ```
 
 Si el enlace trae video y playlist, el menú pregunta qué procesar.  
 Con `--with-most-rated-comments`, en playlists se guardan los comentarios top de **cada** video (`*-comments.md` junto a la transcripción).
+
+Si tras varios videos YouTube responde *Sign in to confirm you're not a bot*, usa `--cookies-from-browser` (sesión abierta en ese navegador) o `--cookies archivo.txt`.
 
 ## Formatos de salida
 
@@ -159,6 +163,8 @@ También acepta monólogo (`voice: Paulina`), `speakers:` / `speaker:` en el fro
 | `--minutes N` | Vista previa: solo los primeros N minutos (local) |
 | `--whisper` | YouTube: forzar Whisper |
 | `--with-most-rated-comments [N]` | YouTube: top N comentarios por likes (default 10; también en playlists) |
+| `--cookies-from-browser BROWSER` | YouTube: cookies del navegador (anti-bot) |
+| `--cookies FILE` | YouTube: archivo Netscape de cookies |
 | `--no-vad` | Desactiva VAD (mejor para canciones/música) |
 | `--rate N` | Podcast: palabras por minuto |
 

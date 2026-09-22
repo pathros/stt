@@ -289,6 +289,8 @@ def _whisper_youtube(
     video: VideoRef,
     formats: list[str],
     timestamps: bool,
+    cookies_from_browser: str | None = None,
+    cookies_file: str | None = None,
 ) -> None:
     """Descarga el audio del video y lo transcribe con faster-whisper."""
 
@@ -310,6 +312,8 @@ def _whisper_youtube(
                     tmp,
                     on_progress=dl.on_progress,
                     should_cancel=dl.should_cancel,
+                    cookies_from_browser=cookies_from_browser,
+                    cookies_file=cookies_file,
                 )
 
         except DownloadCancelled:
@@ -322,7 +326,29 @@ def _whisper_youtube(
 
             msg = str(exc)
 
-            if "timed out" in msg.lower() or "timeout" in msg.lower():
+            lower = msg.lower()
+
+            if "not a bot" in lower or "sign in" in lower:
+
+                error(
+                    "YouTube pide autenticación (anti-bot). "
+                    "Abre youtube.com en tu navegador (sesión iniciada) y "
+                    "reintenta con --cookies-from-browser chrome "
+                    "(o safari / firefox). Si el navegador está abierto y "
+                    "falla al leer cookies, ciérralo un momento o usa "
+                    "--cookies archivo.txt."
+                )
+
+            elif "403" in lower or "forbidden" in lower:
+
+                error(
+                    "YouTube rechazó la descarga del audio (HTTP 403). "
+                    "Suele ser anti-bot del CDN; reintenta con "
+                    "--cookies-from-browser, actualiza yt-dlp "
+                    "(pip install -U yt-dlp) o prueba otra red/VPN."
+                )
+
+            elif "timed out" in lower or "timeout" in lower:
 
                 error(
                     "Timeout al descargar el audio desde el CDN de YouTube "
@@ -384,6 +410,8 @@ def _process_video(
     timestamps: bool,
     use_whisper: bool,
     most_rated_comments: int | None = None,
+    cookies_from_browser: str | None = None,
+    cookies_file: str | None = None,
 ) -> None:
     """Transcribe un video: captions primero, Whisper como respaldo (o forzado)."""
 
@@ -420,7 +448,14 @@ def _process_video(
 
         warn("Sin captions disponibles; usando Whisper como respaldo…")
 
-    _whisper_youtube(cfg, video, formats, timestamps)
+    _whisper_youtube(
+        cfg,
+        video,
+        formats,
+        timestamps,
+        cookies_from_browser=cookies_from_browser,
+        cookies_file=cookies_file,
+    )
 
     if most_rated_comments is not None:
 
@@ -434,6 +469,8 @@ def handle_youtube(
     timestamps: bool | None = None,
     use_whisper: bool = False,
     most_rated_comments: int | None = None,
+    cookies_from_browser: str | None = None,
+    cookies_file: str | None = None,
 ) -> None:
     """Ingesta desde una URL de YouTube (video o playlist)."""
 
@@ -491,11 +528,25 @@ def handle_youtube(
 
         return
 
+    if cookies_from_browser and cookies_file:
+
+        error("Usa solo una de: --cookies-from-browser o --cookies.")
+
+        return
+
     info(f"{len(videos)} video(s) a procesar.")
 
     if use_whisper:
 
         warn("Modo Whisper forzado: se ignoran los captions de YouTube.")
+
+    if cookies_from_browser:
+
+        info(f"Cookies del navegador: {cookies_from_browser}")
+
+    elif cookies_file:
+
+        info(f"Cookies desde archivo: {cookies_file}")
 
     if most_rated_comments is not None:
 
@@ -520,6 +571,8 @@ def handle_youtube(
                 timestamps,
                 use_whisper,
                 most_rated_comments=most_rated_comments,
+                cookies_from_browser=cookies_from_browser,
+                cookies_file=cookies_file,
             )
 
         except Exception as exc:  # noqa: BLE001

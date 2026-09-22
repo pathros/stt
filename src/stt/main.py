@@ -90,6 +90,21 @@ def main():
     )
 
     parser.add_argument(
+        "--cookies-from-browser",
+        metavar="BROWSER",
+        help=(
+            "YouTube: cookies del navegador para anti-bot "
+            "(chrome, safari, firefox, brave, …)"
+        ),
+    )
+
+    parser.add_argument(
+        "--cookies",
+        metavar="FILE",
+        help="YouTube: archivo Netscape de cookies (alternativa al navegador)",
+    )
+
+    parser.add_argument(
         "--no-vad",
         dest="vad_filter",
         action="store_false",
@@ -157,6 +172,8 @@ def main():
             timestamps=timestamps,
             use_whisper=args.whisper,
             most_rated_comments=args.with_most_rated_comments,
+            cookies_from_browser=args.cookies_from_browser,
+            cookies_file=args.cookies,
         )
 
     elif _is_youtube_url(args.source):
@@ -168,6 +185,8 @@ def main():
             timestamps=timestamps,
             use_whisper=args.whisper,
             most_rated_comments=args.with_most_rated_comments,
+            cookies_from_browser=args.cookies_from_browser,
+            cookies_file=args.cookies,
         )
 
     else:
