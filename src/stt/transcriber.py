@@ -53,23 +53,139 @@ def _cpu_threads() -> int:
     return max(4, n)
 
 
+def _compat_audio_open() -> None:
+    """PyAV 19 ya no acepta metadata_errors; faster-whisper 1.2.1 todavía lo manda."""
+
+    import faster_whisper.audio as audio
+
+    original = audio.av.open
+
+    if getattr(original, "_stt_wrapped", False):
+
+        return
+
+    def open_compat(*args, **kwargs):
+
+        kwargs.pop("metadata_errors", None)
+
+        kwargs.pop("metadata_encoding", None)
+
+        return original(*args, **kwargs)
+
+    open_compat._stt_wrapped = True
+
+    audio.av.open = open_compat
+
+
+def _model_candidates(cfg) -> list[Path]:
+
+    from stt.config import CONFIG_PATH
+
+    found: list[Path] = []
+
+    explicit = (getattr(cfg, "model_path", "") or "").strip()
+
+    if explicit:
+
+        found.append(Path(explicit).expanduser())
+
+    env = os.environ.get("STT_MODEL_PATH", "").strip()
+
+    if env:
+
+        found.append(Path(env).expanduser())
+
+    root = CONFIG_PATH.parents[1]
+
+    found.append(root / "models" / cfg.model)
+
+    return found
+
+
+def _local_model(cfg) -> str | None:
+    """Carpeta ya descargada (proyecto o USB), si trae model.bin."""
+
+    for path in _model_candidates(cfg):
+
+        if (path / "model.bin").is_file():
+
+            return str(path)
+
+    return None
+
+
+def _download_model(name: str, attempts: int = 3) -> None:
+    """Baja el modelo con reintentos. Si ya está en caché, sale enseguida."""
+
+    import time
+
+    from faster_whisper.utils import download_model
+
+    last: Exception | None = None
+
+    for attempt in range(1, attempts + 1):
+
+        try:
+
+            download_model(name)
+
+            return
+
+        except Exception as exc:  # noqa: BLE001
+
+            last = exc
+
+            print(
+                f"No se pudo descargar el modelo "
+                f"(intento {attempt} de {attempts}): {exc}"
+            )
+
+            if attempt < attempts:
+
+                print("Se reintenta en unos segundos…")
+
+                time.sleep(3 * attempt)
+
+    raise SystemExit(
+        "No se pudo descargar el modelo de transcripción.\n"
+        "Revise la conexión y vuelva a arrastrar el audio, "
+        "o copie la carpeta models\\medium desde la USB.\n"
+        f"Detalle: {last}"
+    )
+
+
 def _get_model(cfg):
     """Carga (y cachea) el modelo de faster-whisper en CPU."""
 
     from faster_whisper import WhisperModel
 
+    _compat_audio_open()
+
     threads = _cpu_threads()
 
-    key = (cfg.model, cfg.compute_type, threads)
+    local = _local_model(cfg)
+
+    model_id = local or cfg.model
+
+    if local is None:
+
+        _download_model(cfg.model)
+
+    else:
+
+        print(f"Modelo local (sin descargar): {local}")
+
+    key = (model_id, cfg.compute_type, threads)
 
     if key not in _MODEL_CACHE:
 
         _MODEL_CACHE[key] = WhisperModel(
-            cfg.model,
+            model_id,
             device="cpu",
             compute_type=cfg.compute_type,
             cpu_threads=threads,
             num_workers=1,
+            local_files_only=local is not None,
         )
 
     return _MODEL_CACHE[key]

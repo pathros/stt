@@ -11,6 +11,8 @@ requires-python = ">=3.12"
 
 dependencies = [
     "faster-whisper>=1.2.1",
+    # PyAV 19 quitó metadata_errors y faster-whisper 1.2.1 todavía lo envía.
+    "av>=11,<19",
     "yt-dlp>=2026.7.4",
     "youtube-transcript-api>=1.2.4",
     "rich>=15.0.0",

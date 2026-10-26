@@ -474,6 +474,8 @@ Un audio de ~2 h con `medium` en CPU puede tardar **cerca de 2 h o más**: es no
 | Síntoma | Qué hacer |
 |---------|-----------|
 | `could not spawn stt` / `not found` al usar el `.bat` | 1) Verificar `dir C:\Users\...\Apps\stt\.venv\Scripts\stt.exe`. Si no existe: `uv pip install -e .`. 2) Reemplazar el `.bat` del Escritorio por el que llama a `stt.exe` (sección 7), no `uv run stt`. |
+| `open() got an unexpected keyword argument 'metadata_errors'` | Librería de audio demasiado nueva. En la carpeta del programa: `uv pip install "av>=11,<19"` y vuelva a arrastrar el audio. |
+| La transcripción va lenta | En `config\config.json`, baje `"batch_size"` de `8` a `4`. Si sigue pesada, `2`. `0` apaga los lotes. |
 | `Invalid \escape` / `config.json inválido` | En Windows, `"output"` con `/` o `\\`; **una sola `\` truena**. Ver sección 6 |
 | Rutas “no se encuentra” al pegar comandos | El usuario de la guía no es el de esa PC → `$env:USERNAME` |
 | `uv` no se reconoce | Nueva terminal o reiniciar Windows |

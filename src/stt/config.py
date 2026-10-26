@@ -36,6 +36,9 @@ class Config:
     # Inferencia por lotes (habla + VAD). 0 = desactivar.
     batch_size: int = 8
 
+    # Carpeta local del modelo (USB o models/<nombre>). Vacío = buscar solo.
+    model_path: str = ""
+
 
 def load_config() -> Config:
 
@@ -57,6 +60,8 @@ def load_config() -> Config:
     data.setdefault("initial_prompt", "")
 
     data.setdefault("batch_size", 8)
+
+    data.setdefault("model_path", "")
 
     data["output"] = Path(data["output"]).expanduser()
 
