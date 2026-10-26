@@ -96,6 +96,10 @@ def handle_local(
 
     section("Archivo local")
 
+    # Si ya llegó un archivo (acceso directo o comando), no se pregunta nada:
+    # se usan la carpeta y el formato guardados en la configuración.
+    from_shortcut = path is not None
+
     if path is None:
 
         path = Prompt.ask("Ruta del archivo").strip()
@@ -114,15 +118,27 @@ def handle_local(
 
     if formats is None:
 
-        formats = _ask_formats(cfg)
+        if from_shortcut:
+
+            formats = list(cfg.formats) or ["docx"]
+
+        else:
+
+            formats = _ask_formats(cfg)
 
     if timestamps is None:
 
-        timestamps = Prompt.ask(
-            "¿Incluir marcas de tiempo?",
-            choices=["s", "n"],
-            default="n",
-        ) == "s"
+        if from_shortcut:
+
+            timestamps = False
+
+        else:
+
+            timestamps = Prompt.ask(
+                "¿Incluir marcas de tiempo?",
+                choices=["s", "n"],
+                default="n",
+            ) == "s"
 
     invalid = [f for f in formats if f.lstrip(".").lower() not in SUPPORTED_FORMATS]
 
@@ -135,6 +151,10 @@ def handle_local(
     info(f"Archivo: {audio}")
 
     info(f"Modelo: {cfg.model} ({cfg.compute_type}, CPU) · idioma: {cfg.language}")
+
+    if cfg.language == "auto":
+
+        info("El idioma se detecta solo a partir del audio.")
 
     if cfg.vad_filter and int(getattr(cfg, "batch_size", 0) or 0) > 0:
 

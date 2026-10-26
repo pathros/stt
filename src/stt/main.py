@@ -7,8 +7,6 @@ from stt.youtube import DEFAULT_MOST_RATED_COMMENTS
 
 def main():
 
-    cfg = load_config()
-
     parser = argparse.ArgumentParser(
         prog="stt",
         description="Speech To Text (Faster Whisper)",
@@ -118,7 +116,23 @@ def main():
         help="Podcast: velocidad de voz en palabras por minuto (p. ej. 180)",
     )
 
+    parser.add_argument(
+        "--auto",
+        action="store_true",
+        help="Con «configurar»: Word, Documentos y modelo según la memoria, sin preguntas",
+    )
+
     args = parser.parse_args()
+
+    if args.source in {"configurar", "setup"}:
+
+        from stt.setup_wizard import run_setup
+
+        run_setup(auto=args.auto)
+
+        return
+
+    cfg = load_config()
 
     # Overrides de configuración vía flags.
     if args.model:

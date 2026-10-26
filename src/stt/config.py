@@ -67,7 +67,8 @@ def save_config(config: Config):
 
     data = asdict(config)
 
-    data["output"] = str(data["output"])
+    # Barras normales: en Windows una sola \ rompe el JSON.
+    data["output"] = str(data["output"]).replace("\\", "/")
 
     with open(CONFIG_PATH, "w", encoding="utf8") as f:
 

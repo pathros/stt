@@ -13,6 +13,14 @@ También descarga captions de YouTube y genera podcasts de audio a partir de gui
 pip install -e .
 ```
 
+### Windows (uso sencillo)
+
+Instrucciones en Word: **`INSTALACION-WINDOWS.docx`**.
+
+Descargue el ZIP, extraiga y doble clic en **`Instalar.bat`**. No se edita `config.json` ni se escriben rutas (aunque el usuario de Windows tenga espacios). El icono **Transcribir** queda en el Escritorio; el Word, en Documentos\Transcripciones.
+
+Para cambiar carpeta o formato después: icono **Configurar-transcripcion**, o `stt configurar`.
+
 ## Cómo transcribir
 
 ### Menú interactivo

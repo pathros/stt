@@ -1,6 +1,26 @@
 # Instalación de `stt` (transcripción) en Windows 11
 
-Guía para instalar `stt` en una PC con Windows (por ejemplo la de la secretaria: Dell / i5-14500 / 16 GB RAM).  
+## Instalación fácil (recomendada)
+
+Instrucciones para imprimir o enviar: **`INSTALACION-WINDOWS.docx`** (en esta misma carpeta).
+
+No hay que copiar archivos a mano, ni editar `config.json`, ni escribir la ruta del usuario. Si el nombre lleva espacios (`Edith quijano`), el instalador lo resuelve.
+
+1. Descargue el ZIP: https://github.com/pathros/stt/archive/refs/heads/main.zip
+2. Clic derecho → **Extraer todo**.
+3. Entre en la carpeta `stt-main` y doble clic en **`Instalar.bat`**.
+4. Espere (internet la primera vez). No escriba nada.
+5. En el Escritorio, arrastre el audio encima de **Transcribir**.
+
+El texto queda en **Documentos\Transcripciones**, en Word, en párrafos. El idioma se detecta solo. El modelo se elige según la memoria de esa PC.
+
+Para cambiar la carpeta más adelante: doble clic en **Configurar-transcripcion** (Escritorio).
+
+La guía larga de abajo es el camino manual, por si el doble clic no basta.
+
+---
+
+Guía manual para instalar `stt` en una PC con Windows (por ejemplo la de la secretaria: Dell / i5-14500 / 16 GB RAM).  
 Abre este archivo en el Bloc de notas o en el navegador y **copia/pega** los comandos en **PowerShell**.
 
 ---
