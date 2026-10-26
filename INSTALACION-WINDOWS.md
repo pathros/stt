@@ -9,7 +9,7 @@ No hay que copiar archivos a mano, ni editar `config.json`, ni escribir la ruta 
 1. Descargue el ZIP: https://github.com/pathros/stt/archive/refs/heads/main.zip
 2. Clic derecho → **Extraer todo**.
 3. Entre en la carpeta `stt-main` y doble clic en **`Instalar.bat`**.
-4. Espere (internet la primera vez). No escriba nada.
+4. Espere (internet la primera vez). No escriba nada. Si Python o uv ya están instalados, los usa y no los vuelve a instalar.
 5. En el Escritorio, arrastre el audio encima de **Transcribir**.
 
 El texto queda en **Documentos\Transcripciones**, en Word, en párrafos. El idioma se detecta solo. El modelo se elige según la memoria de esa PC.

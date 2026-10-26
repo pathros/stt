@@ -40,25 +40,32 @@ echo  El nombre de usuario puede llevar espacios.
 echo  La primera vez necesita internet y puede tardar varios minutos.
 echo.
 
-if not exist "%UV%" (
-  where uv >nul 2>&1
-  if errorlevel 1 (
-    echo Instalando el asistente de Python...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex"
-  )
-)
-
-if exist "%UV%" (
-  set "UVCMD=%UV%"
-) else (
-  set "UVCMD=uv"
-)
-
-"%UVCMD%" --version >nul 2>&1
+call :locate_uv
 if errorlevel 1 (
+  echo No se encontro uv. Se instalara.
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex"
+  set "UVCMD=%USERPROFILE%\.local\bin\uv.exe"
+) else (
+  echo uv ya esta instalado. No se vuelve a instalar.
+)
+
+if not exist "%UVCMD%" (
   echo.
-  echo No se pudo preparar Python. Revise la conexion y vuelva a abrir Instalar.bat.
+  echo No se pudo preparar uv. Revise la conexion y vuelva a abrir Instalar.bat.
   goto :fail
+)
+
+call :locate_python
+if errorlevel 1 (
+  echo No hay Python 3.12 o mas reciente. Se instalara Python 3.12.
+  "%UVCMD%" python install 3.12
+  if errorlevel 1 goto :fail
+  "%UVCMD%" python pin 3.12
+  if errorlevel 1 goto :fail
+) else (
+  echo Python ya esta instalado. No se vuelve a instalar.
+  "%UVCMD%" python pin 3.12 >nul 2>&1
+  if errorlevel 1 "%UVCMD%" python pin 3.13 >nul 2>&1
 )
 
 where ffmpeg >nul 2>&1
@@ -67,16 +74,13 @@ if errorlevel 1 (
   echo Instalando el programa que abre los audios...
   winget install --id Gyan.FFmpeg -e --accept-package-agreements --accept-source-agreements
   echo.
+) else (
+  echo ffmpeg ya esta instalado.
 )
 
+echo.
 echo Preparando el programa...
 echo.
-
-"%UVCMD%" python install 3.12
-if errorlevel 1 goto :fail
-
-"%UVCMD%" python pin 3.12
-if errorlevel 1 goto :fail
 
 if not exist "%~dp0.venv\Scripts\python.exe" (
   "%UVCMD%" venv
@@ -110,4 +114,29 @@ echo La instalacion no termino.
 echo Deje esta ventana abierta y envie una foto del texto.
 echo.
 pause
+exit /b 1
+
+:locate_uv
+set "UVCMD="
+if exist "%USERPROFILE%\.local\bin\uv.exe" set "UVCMD=%USERPROFILE%\.local\bin\uv.exe"
+if not defined UVCMD if exist "%LOCALAPPDATA%\Microsoft\WinGet\Links\uv.exe" set "UVCMD=%LOCALAPPDATA%\Microsoft\WinGet\Links\uv.exe"
+if not defined UVCMD (
+  for /f "delims=" %%U in ('where uv 2^>nul') do (
+    if not defined UVCMD set "UVCMD=%%U"
+  )
+)
+if not defined UVCMD exit /b 1
+exit /b 0
+
+:locate_python
+"%UVCMD%" python find 3.12 >nul 2>&1
+if not errorlevel 1 exit /b 0
+"%UVCMD%" python find 3.13 >nul 2>&1
+if not errorlevel 1 exit /b 0
+py -3.12 -c "import sys" >nul 2>&1
+if not errorlevel 1 exit /b 0
+py -3.13 -c "import sys" >nul 2>&1
+if not errorlevel 1 exit /b 0
+python -c "import sys; raise SystemExit(0 if sys.version_info>=(3,12) else 1)" >nul 2>&1
+if not errorlevel 1 exit /b 0
 exit /b 1

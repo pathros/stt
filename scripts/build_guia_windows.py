@@ -108,6 +108,7 @@ def main() -> None:
             "Dentro de stt-main, doble clic en Instalar.bat.",
             "Si Windows muestra un aviso azul (“protegió su PC”), pulse Más información y luego Ejecutar de todas formas.",
             "No escriba nada. Espere. La primera vez puede tardar varios minutos.",
+            "Si Python o uv ya están en la computadora, el instalador los usa y no los vuelve a instalar.",
             "Cuando diga que la instalación terminó, puede cerrar esa ventana.",
         ],
     )
