@@ -43,6 +43,115 @@ def _ask_formats(cfg: Config) -> list[str]:
     return [f.strip() for f in chosen.split(",") if f.strip()]
 
 
+def _parse_names(raw: str | None) -> list[str]:
+
+    from stt.diarize import parse_names
+
+    return parse_names(raw)
+
+
+def _ask_speaker_count() -> tuple[int, list[str]] | None:
+    """Pregunta cuántas personas y, si quiere, sus nombres."""
+
+    raw = Prompt.ask(
+        "¿Cuántas personas hablan? Enter para estimarlo (en una entrevista, 2)",
+        default="",
+    ).strip()
+
+    if not raw:
+
+        count = 0
+
+    elif raw.isdigit() and 1 <= int(raw) <= 20:
+
+        count = int(raw)
+
+    else:
+
+        error("Escriba un número entre 1 y 20, o Enter para estimarlo.")
+
+        return None
+
+    names = Prompt.ask(
+        "Nombres en el orden en que empiezan a hablar, separados por coma. "
+        "Enter deja Hablante 1, Hablante 2…",
+        default="",
+    )
+
+    return count, _parse_names(names)
+
+
+def _resolve_speakers(
+    speakers: int | None,
+    names: str | None,
+    *,
+    offer: bool,
+) -> tuple[int | None, list[str]]:
+    """None si esta corrida no separa voces."""
+
+    import sys
+
+    from stt.diarize import enable_speakers
+
+    if speakers is None and offer:
+
+        if Prompt.ask(
+            "¿Separar quién habla? Es opcional y usa más memoria y disco",
+            choices=["s", "n"],
+            default="n",
+        ) != "s":
+
+            return None, []
+
+        if not enable_speakers(interactive=True):
+
+            warn("Se transcribe sin separar voces.")
+
+            return None, []
+
+        asked = _ask_speaker_count()
+
+        if asked is None:
+
+            warn("Se transcribe sin separar voces.")
+
+            return None, []
+
+        return asked
+
+    if speakers is None:
+
+        return None, []
+
+    if speakers < 0 or speakers > 20:
+
+        error("--speakers admite de 1 a 20, o sin número para estimarlo.")
+
+        return None, []
+
+    if not enable_speakers(interactive=sys.stdin.isatty()):
+
+        warn("Se transcribe sin separar voces.")
+
+        return None, []
+
+    return speakers, _parse_names(names)
+
+
+def _speaker_plan(count: int | None, names: list[str]):
+
+    if count is None:
+
+        return None
+
+    from stt.diarize import DiarizePlan
+
+    return DiarizePlan(
+        num_speakers=None if count == 0 else count,
+        names=names,
+    )
+
+
 def run_menu(cfg: Config) -> None:
     """Modo guiado: muestra el menú y despacha la opción elegida."""
 
@@ -91,6 +200,8 @@ def handle_local(
     formats: list[str] | None = None,
     timestamps: bool | None = None,
     minutes: float | None = None,
+    speakers: int | None = None,
+    names: str | None = None,
 ) -> None:
     """Transcribe un archivo local con faster-whisper."""
 
@@ -168,6 +279,12 @@ def handle_local(
 
         warn(f"Vista previa: solo los primeros {minutes:g} min.")
 
+    speaker_count, speaker_names = _resolve_speakers(
+        speakers,
+        names,
+        offer=not from_shortcut and speakers is None,
+    )
+
     _run_whisper(
         cfg,
         audio,
@@ -176,6 +293,7 @@ def handle_local(
         stem=safe_filename(audio.stem),
         title=audio.stem,
         minutes=minutes,
+        diarize_plan=_speaker_plan(speaker_count, speaker_names),
     )
 
 
@@ -187,6 +305,7 @@ def _run_whisper(
     stem: str,
     title: str,
     minutes: float | None = None,
+    diarize_plan=None,
 ) -> None:
     """Transcribe un archivo de audio con faster-whisper y escribe la salida."""
 
@@ -194,6 +313,45 @@ def _run_whisper(
     from stt.progress import transcription_progress
 
     print()
+
+    turns = None
+
+    if diarize_plan is not None:
+
+        from stt.diarize import DiarizeError, diarize_audio
+
+        info(
+            "Separando voces antes de transcribir. "
+            "En una hora de audio puede tardar un buen rato."
+        )
+
+        try:
+
+            turns = diarize_audio(
+                audio,
+                num_speakers=diarize_plan.num_speakers,
+                minutes=minutes,
+            )
+
+        except DiarizeError as exc:
+
+            warn(str(exc))
+
+            warn("Se sigue con la transcripción, sin separar voces.")
+
+            turns = None
+
+        else:
+
+            if not turns:
+
+                warn("No se distinguieron cambios de voz. Se guarda el texto seguido.")
+
+                turns = None
+
+            else:
+
+                info(f"Tramos de voz: {len(turns)}. Ahora se transcribe el texto.")
 
     try:
 
@@ -239,6 +397,22 @@ def _run_whisper(
         warn("No se obtuvo texto (¿audio en silencio o VAD muy agresivo?).")
 
         return
+
+    if turns:
+
+        from stt.diarize import apply_names, assign_speakers
+
+        assign_speakers(segments, turns)
+
+        labels, note = apply_names(segments, diarize_plan.names)
+
+        if labels:
+
+            info("Voces: " + ", ".join(labels))
+
+        if note:
+
+            warn(note)
 
     paths = write_many(
         segments,
@@ -311,6 +485,7 @@ def _whisper_youtube(
     timestamps: bool,
     cookies_from_browser: str | None = None,
     cookies_file: str | None = None,
+    diarize_plan=None,
 ) -> None:
     """Descarga el audio del video y lo transcribe con faster-whisper."""
 
@@ -385,6 +560,7 @@ def _whisper_youtube(
             timestamps,
             stem=safe_filename(video.title),
             title=video.title,
+            diarize_plan=diarize_plan,
         )
 
     finally:
@@ -432,10 +608,17 @@ def _process_video(
     most_rated_comments: int | None = None,
     cookies_from_browser: str | None = None,
     cookies_file: str | None = None,
+    diarize_plan=None,
 ) -> None:
     """Transcribe un video: captions primero, Whisper como respaldo (o forzado)."""
 
     console.print(f"[cyan]▶[/cyan] {video.title}")
+
+    if diarize_plan is not None and not use_whisper:
+
+        warn("Para separar voces se transcribe el audio. No se usan los captions.")
+
+        use_whisper = True
 
     if not use_whisper:
 
@@ -475,6 +658,7 @@ def _process_video(
         timestamps,
         cookies_from_browser=cookies_from_browser,
         cookies_file=cookies_file,
+        diarize_plan=diarize_plan,
     )
 
     if most_rated_comments is not None:
@@ -491,10 +675,14 @@ def handle_youtube(
     most_rated_comments: int | None = None,
     cookies_from_browser: str | None = None,
     cookies_file: str | None = None,
+    speakers: int | None = None,
+    names: str | None = None,
 ) -> None:
     """Ingesta desde una URL de YouTube (video o playlist)."""
 
     section("YouTube")
+
+    from_menu = url is None
 
     if url is None:
 
@@ -577,6 +765,14 @@ def handle_youtube(
 
     languages = _caption_languages(cfg)
 
+    speaker_count, speaker_names = _resolve_speakers(
+        speakers,
+        names,
+        offer=from_menu and speakers is None,
+    )
+
+    plan = _speaker_plan(speaker_count, speaker_names)
+
     print()
 
     for video in videos:
@@ -593,6 +789,7 @@ def handle_youtube(
                 most_rated_comments=most_rated_comments,
                 cookies_from_browser=cookies_from_browser,
                 cookies_file=cookies_file,
+                diarize_plan=plan,
             )
 
         except Exception as exc:  # noqa: BLE001
@@ -753,7 +950,11 @@ def handle_config(cfg: Config) -> None:
 
     show_config(cfg)
 
+    from stt.hardware import diarization_verdict, format_diarization_verdict
+
     print()
+
+    print(format_diarization_verdict(diarization_verdict()))
 
     if Prompt.ask(
         "¿Editar configuración?",

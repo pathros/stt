@@ -57,6 +57,27 @@ Si ya sabes el código ISO: `-l es`, `-l uk`, `-l en`, etc.
 
 En música el VAD suele tirar casi todo el audio (solo quedan 1–2 líneas). Con `--no-vad` también se evita condicionar en el texto previo, que en canciones produce alucinaciones típicas (“субтитры…”, “thanks for watching”, etc.).
 
+## Separar voces (opcional)
+
+faster-whisper no distingue quién habla. Para una entrevista o un podcast se puede añadir, aparte, el modelo local `pyannote/speaker-diarization-community-1`. Marca turnos (`Hablante 1`, `Hablante 2`). No adivina el nombre real.
+
+No viene instalado. Ocupa unos **6 GB** de disco (PyTorch de CPU y el modelo) y hace falta una computadora con **al menos 12 GB** de memoria. La transcripción y la separación corren una después de la otra.
+
+Al instalar (`Instalar.bat` o `stt configurar`) el programa escribe un dictamen: si **este** equipo puede instalarlo o no. Si no puede, la transcripción normal no cambia.
+
+```bash
+stt voces                         # dictamen y, si cabe, instalación
+stt entrevista.m4a --speakers 2
+stt entrevista.m4a --speakers 2 --names "Ana,Luis"
+stt entrevista.m4a --speakers     # estima cuántas personas hay
+```
+
+`--names` sigue el orden en que empiezan a hablar. En el menú (`stt` → archivo local) también pregunta; la respuesta por defecto es no. Arrastrar el audio al icono **Transcribir** no separa voces.
+
+La primera descarga del modelo pide una cuenta de Hugging Face, aceptar las condiciones en [speaker-diarization-community-1](https://huggingface.co/pyannote/speaker-diarization-community-1) y un token de lectura. Se guarda en `config/hf_token` (no se sube a git). Después el audio no sale de la computadora.
+
+En Markdown y Word cada turno queda como `**Ana:** texto`. En JSON, el segmento trae `speaker`. Si una frase junta a dos personas, se asigna a quien más tiempo ocupó ese tramo.
+
 ```bash
 # Reunión / podcast hablado (VAD activado)
 stt ~/Downloads/zoom-call.m4a -l es -f md
@@ -174,6 +195,8 @@ También acepta monólogo (`voice: Paulina`), `speakers:` / `speaker:` en el fro
 | `--cookies-from-browser BROWSER` | YouTube: cookies del navegador (anti-bot) |
 | `--cookies FILE` | YouTube: archivo Netscape de cookies |
 | `--no-vad` | Desactiva VAD (mejor para canciones/música) |
+| `--speakers [N]` | Separa quién habla (opcional). `N` = personas; sin `N`, lo estima |
+| `--names "Ana,Luis"` | Nombres en el orden en que hablan. Solo con `--speakers` |
 | `--rate N` | Podcast: palabras por minuto |
 
 ## Configuración

@@ -16,6 +16,12 @@ El texto queda en **Documentos\Transcripciones**, en Word, en párrafos. El idio
 
 Para cambiar la carpeta más adelante: doble clic en **Configurar-transcripcion** (Escritorio).
 
+Al terminar, la ventana dice si **esa** computadora puede separar las voces de una entrevista (quién habla). Hacen falta al menos 12 GB de memoria y unos 6 GB libres en disco. **No se instala solo.** El icono Transcribir no lo usa. Si el dictamen dice que sí y hace falta, en la carpeta del programa:
+
+```text
+.venv\Scripts\stt.exe voces
+```
+
 La guía larga de abajo es el camino manual, por si el doble clic no basta.
 
 ---

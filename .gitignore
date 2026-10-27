@@ -15,6 +15,9 @@ env/
 models/
 .cache/
 
+# Token de Hugging Face para bajar el modelo de voces (no se sube).
+config/hf_token
+
 # Audios y salidas de transcripción
 *.mp3
 *.m4a

@@ -15,7 +15,10 @@ def main():
     parser.add_argument(
         "source",
         nargs="?",
-        help="Ruta de un archivo local, URL de YouTube, 'youtube', o vacío para el menú",
+        help=(
+            "Archivo local, URL de YouTube, 'youtube', 'podcast', "
+            "'voces' o vacío para el menú"
+        ),
     )
 
     parser.add_argument(
@@ -117,6 +120,25 @@ def main():
     )
 
     parser.add_argument(
+        "--speakers",
+        nargs="?",
+        const=0,
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "Separa quién habla (opcional; no viene instalado). "
+            "Sin número, estima cuántas personas hay. "
+            "Entrevista: --speakers 2"
+        ),
+    )
+
+    parser.add_argument(
+        "--names",
+        help='Nombres en el orden en que hablan, separados por coma. Ej. "Ana,Luis"',
+    )
+
+    parser.add_argument(
         "--auto",
         action="store_true",
         help="Con «configurar»: Word, Documentos y modelo según la memoria, sin preguntas",
@@ -131,6 +153,22 @@ def main():
         run_setup(auto=args.auto)
 
         return
+
+    if args.source == "voces":
+
+        from stt.diarize import run_voices
+
+        run_voices()
+
+        return
+
+    if args.names and args.speakers is None:
+
+        parser.error("--names solo aplica junto con --speakers")
+
+    if args.speakers is not None and not 0 <= args.speakers <= 20:
+
+        parser.error("--speakers admite de 1 a 20, o sin número para estimarlo")
 
     cfg = load_config()
 
@@ -175,6 +213,13 @@ def main():
 
         audio_format = formats[0] if formats else None
 
+        if args.speakers is not None:
+
+            print(
+                "El podcast parte de un guion: las voces ya van escritas. "
+                "--speakers no aplica."
+            )
+
         handle_podcast(cfg, args.url, audio_format=audio_format, rate=args.rate)
 
     elif args.source == "youtube":
@@ -188,6 +233,8 @@ def main():
             most_rated_comments=args.with_most_rated_comments,
             cookies_from_browser=args.cookies_from_browser,
             cookies_file=args.cookies,
+            speakers=args.speakers,
+            names=args.names,
         )
 
     elif _is_youtube_url(args.source):
@@ -201,6 +248,8 @@ def main():
             most_rated_comments=args.with_most_rated_comments,
             cookies_from_browser=args.cookies_from_browser,
             cookies_file=args.cookies,
+            speakers=args.speakers,
+            names=args.names,
         )
 
     else:
@@ -211,6 +260,8 @@ def main():
             formats=formats,
             timestamps=timestamps,
             minutes=args.minutes,
+            speakers=args.speakers,
+            names=args.names,
         )
 
 

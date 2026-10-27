@@ -27,6 +27,14 @@ dependencies = [
 #   yt-dlp usa ffmpeg para extraer y normalizar audio.
 #   edge-tts (motor de podcast opcional) usa las voces neuronales en línea
 #   de Microsoft Edge; requiere conexión a internet, sin API key.
+#
+# Separar voces (opcional, no se instala con el programa):
+#   stt voces
+# En Windows y Linux ese comando baja PyTorch de CPU y luego pyannote.
+# No use el extra de abajo en Windows si no quiere la rueda enorme con CUDA.
+
+[project.optional-dependencies]
+voces = ["pyannote.audio>=4.0"]
 
 [project.scripts]
 stt = "stt.main:main"

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from stt.config import CONFIG_PATH, Config, save_config
-from stt.hardware import diagnose
+from stt.hardware import diagnose, diarization_verdict, format_diarization_verdict
 
 
 def _windows_folder(csidl: int, fallback: Path) -> Path:
@@ -146,6 +146,7 @@ def run_setup(auto: bool = False) -> None:
     print(report.note)
     print(f"Modelo que se usará: {report.model}")
     print()
+    print(format_diarization_verdict(diarization_verdict()))
 
     if not report.ffmpeg:
 

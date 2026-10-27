@@ -145,6 +145,25 @@ def main() -> None:
 
             run.font.name = "Calibri"
 
+    add_heading(doc, "Separar quién habla en una entrevista", 1)
+
+    add_body(
+        doc,
+        "Al terminar la instalación, la ventana dice si esa computadora puede "
+        "separar las voces (quién habla). Hacen falta al menos 12 GB de memoria "
+        "y unos 6 GB libres en disco. No se instala solo: el icono Transcribir "
+        "no lo usa, y la transcripción normal sigue igual.",
+    )
+
+    add_body(
+        doc,
+        "Si el dictamen dice que sí se puede, y de verdad lo necesita, "
+        "quien instaló el programa abre la carpeta stt-main y ejecuta "
+        ".venv\\Scripts\\stt.exe voces. La primera vez pide internet y una "
+        "cuenta gratuita de Hugging Face para bajar el modelo. "
+        "El audio no se envía a internet.",
+    )
+
     add_heading(doc, "Si más adelante quiere otra carpeta", 1)
 
     add_body(

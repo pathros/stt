@@ -15,6 +15,9 @@ class Segment:
 
     text: str
 
+    # Vacío si no se separaron voces. Con --speakers: "Hablante 1", un nombre, etc.
+    speaker: str | None = None
+
 
 def _fmt_timestamp(seconds: float, sep: str) -> str:
     """Formatea segundos como HH:MM:SS<sep>mmm (sep ',' para SRT, '.' para VTT)."""
@@ -34,14 +37,27 @@ def _fmt_timestamp(seconds: float, sep: str) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d}{sep}{ms:03d}"
 
 
-def _paragraphs(segments: list[Segment], gap: float = 2.0) -> list[str]:
-    """Agrupa segmentos en párrafos usando las pausas del audio."""
+@dataclass(slots=True)
+class _Block:
+    """Párrafo ya agrupado. speaker es None cuando no se separaron voces."""
 
-    paragraphs: list[str] = []
+    speaker: str | None
+
+    text: str
+
+
+def _blocks(segments: list[Segment], gap: float = 2.0) -> list[_Block]:
+    """Agrupa por pausas y, si hay voces, también cuando cambia quién habla."""
+
+    blocks: list[_Block] = []
 
     current: list[str] = []
 
+    current_speaker: str | None = None
+
     prev_end: float | None = None
+
+    started = False
 
     for s in segments:
 
@@ -51,21 +67,35 @@ def _paragraphs(segments: list[Segment], gap: float = 2.0) -> list[str]:
 
             continue
 
-        if prev_end is not None and (s.start - prev_end) > gap and current:
+        gap_break = prev_end is not None and (s.start - prev_end) > gap
 
-            paragraphs.append(" ".join(current))
+        speaker_break = started and s.speaker != current_speaker
+
+        if current and (gap_break or speaker_break):
+
+            blocks.append(_Block(current_speaker, " ".join(current)))
 
             current = []
 
         current.append(text)
 
+        current_speaker = s.speaker
+
         prev_end = s.end
+
+        started = True
 
     if current:
 
-        paragraphs.append(" ".join(current))
+        blocks.append(_Block(current_speaker, " ".join(current)))
 
-    return paragraphs
+    return blocks
+
+
+def _paragraphs(segments: list[Segment], gap: float = 2.0) -> list[str]:
+    """Agrupa segmentos en párrafos usando las pausas del audio."""
+
+    return [block.text for block in _blocks(segments, gap)]
 
 
 def write_txt(segments: list[Segment], path: Path) -> None:
@@ -75,9 +105,19 @@ def write_txt(segments: list[Segment], path: Path) -> None:
     con línea en blanco. Así Word no hereda un salto por cada frase.
     """
 
-    paragraphs = _paragraphs(segments)
+    chunks = []
 
-    path.write_text("\n\n".join(paragraphs) + "\n", encoding="utf8")
+    for block in _blocks(segments):
+
+        if block.speaker:
+
+            chunks.append(f"{block.speaker}: {block.text}")
+
+        else:
+
+            chunks.append(block.text)
+
+    path.write_text("\n\n".join(chunks) + "\n", encoding="utf8")
 
 
 def write_docx(
@@ -93,9 +133,21 @@ def write_docx(
 
     doc.add_heading(title, level=1)
 
-    for paragraph in _paragraphs(segments):
+    for block in _blocks(segments):
 
-        doc.add_paragraph(paragraph)
+        if block.speaker:
+
+            paragraph = doc.add_paragraph()
+
+            label = paragraph.add_run(f"{block.speaker}: ")
+
+            label.bold = True
+
+            paragraph.add_run(block.text)
+
+        else:
+
+            doc.add_paragraph(block.text)
 
     doc.save(path)
 
@@ -120,15 +172,27 @@ def write_md(
 
             ts = _fmt_timestamp(s.start, ".").split(".")[0]
 
-            lines.append(f"**[{ts}]** {s.text.strip()}")
+            if s.speaker:
+
+                lines.append(f"**[{ts}] {s.speaker}:** {s.text.strip()}")
+
+            else:
+
+                lines.append(f"**[{ts}]** {s.text.strip()}")
 
             lines.append("")
 
     else:
 
-        for paragraph in _paragraphs(segments):
+        for block in _blocks(segments):
 
-            lines.append(paragraph)
+            if block.speaker:
+
+                lines.append(f"**{block.speaker}:** {block.text}")
+
+            else:
+
+                lines.append(block.text)
 
             lines.append("")
 
@@ -145,7 +209,13 @@ def write_srt(segments: list[Segment], path: Path) -> None:
 
         end = _fmt_timestamp(s.end, ",")
 
-        blocks.append(f"{i}\n{start} --> {end}\n{s.text.strip()}\n")
+        text = s.text.strip()
+
+        if s.speaker:
+
+            text = f"{s.speaker}: {text}"
+
+        blocks.append(f"{i}\n{start} --> {end}\n{text}\n")
 
     path.write_text("\n".join(blocks), encoding="utf8")
 
@@ -162,7 +232,13 @@ def write_vtt(segments: list[Segment], path: Path) -> None:
 
         lines.append(f"{start} --> {end}")
 
-        lines.append(s.text.strip())
+        text = s.text.strip()
+
+        if s.speaker:
+
+            text = f"{s.speaker}: {text}"
+
+        lines.append(text)
 
         lines.append("")
 
@@ -171,10 +247,17 @@ def write_vtt(segments: list[Segment], path: Path) -> None:
 
 def write_json(segments: list[Segment], path: Path) -> None:
 
-    data = [
-        {"start": s.start, "end": s.end, "text": s.text}
-        for s in segments
-    ]
+    data = []
+
+    for s in segments:
+
+        item = {"start": s.start, "end": s.end, "text": s.text}
+
+        if s.speaker:
+
+            item["speaker"] = s.speaker
+
+        data.append(item)
 
     path.write_text(
         json.dumps(data, indent=2, ensure_ascii=False) + "\n",
