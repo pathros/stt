@@ -15,7 +15,7 @@ pip install -e .
 
 ### Windows (uso sencillo)
 
-Instrucciones en Word: **`INSTALACION-WINDOWS.docx`**.
+Instrucciones para Windows: **`INSTALACION-WINDOWS.txt`** (Bloc de notas) y **`INSTALACION-WINDOWS.docx`** (Word).
 
 Descargue el ZIP de la versión etiquetada [v0.1.0](https://github.com/pathros/stt/archive/refs/tags/v0.1.0.zip), extraiga y doble clic en **`Instalar.bat`**. No se sigue la rama `main`. La huella SHA-256 de ese ZIP es `918bb5c88f4d3623ffbd7dc14ee2bd0bc567f74a9980236b0ec71b2708c8e8cb`. Si `Instalar.bat` baja el programa solo, rechaza un ZIP distinto. No se edita `config.json` ni se escriben rutas (aunque el usuario de Windows tenga espacios). El icono **Transcribir** queda en el Escritorio; el Word, en Documentos\Transcripciones.
 

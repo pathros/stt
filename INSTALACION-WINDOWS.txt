@@ -1,0 +1,71 @@
+﻿CÓMO INSTALAR LA TRANSCRIPCIÓN DE AUDIO EN WINDOWS
+
+Abra este archivo con el Bloc de notas.
+No hace falta abrir archivos .md.
+
+Sirve para transcribir entrevistas y otros audios.
+El resultado es un archivo de Word, con párrafos, listo para revisar.
+
+No tiene que copiar carpetas a mano, ni abrir archivos de configuración,
+ni escribir rutas. Si su nombre de usuario lleva espacios
+(por ejemplo, Edith quijano), no importa: el instalador lo resuelve.
+
+QUÉ NECESITA
+
+Una computadora con Windows 10 u 11, internet la primera vez,
+y el audio que quiera transcribir (por ejemplo un .mp3).
+
+1. DESCARGUE EL PROGRAMA
+
+Abra el navegador (Edge o Chrome) y copie esta dirección:
+
+https://github.com/pathros/stt/archive/refs/tags/v0.1.0.zip
+
+Se bajará un archivo comprimido (.zip). Casi siempre queda en Descargas.
+
+2. ÁBRALO
+
+Vaya a Descargas.
+Clic derecho sobre el archivo cuyo nombre empieza por stt.
+Elija Extraer todo y después Extraer.
+Se abre una carpeta llamada stt-0.1.0. Entre en ella.
+
+3. INSTALE CON UN DOBLE CLIC
+
+Dentro de stt-0.1.0, doble clic en Instalar.bat.
+Si Windows muestra un aviso azul (“protegió su PC”),
+pulse Más información y luego Ejecutar de todas formas.
+No escriba nada. Espere. La primera vez puede tardar varios minutos.
+Si Python o uv ya están en la computadora, el instalador los usa
+y no los vuelve a instalar.
+Cuando diga que la instalación terminó, puede cerrar esa ventana.
+
+4. TRANSCRIBA UN AUDIO
+
+En el Escritorio verá un icono llamado Transcribir.
+Arrastre el archivo de audio encima de ese icono.
+Se abre una ventana. Ahí se ve el avance y, en unas líneas,
+el texto que se va transcribiendo.
+La primera transcripción descarga el modelo de idioma y puede tardar
+varios minutos. El aviso de Hugging Face no es un error.
+Al terminar, el Word está en Documentos, dentro de Transcripciones.
+Ábralo con Word para revisar, agregar saltos de línea y ajustar el formato.
+
+QUÉ QUEDA CONFIGURADO SOLO
+
+- El texto se guarda en Word (.docx).
+- La carpeta es Documentos\Transcripciones.
+- El idioma se detecta solo a partir del audio.
+- El programa elige un modelo acorde a la memoria de esa computadora.
+- Los párrafos se separan cuando hay una pausa en el audio.
+
+SI MÁS ADELANTE QUIERE OTRA CARPETA
+
+En el Escritorio también queda Configurar-transcripcion.
+Doble clic, y ahí puede cambiar la carpeta o el formato.
+No hace falta para el uso de todos los días.
+
+SI ALGO FALLA
+
+No cierre la ventana negra. Tome una foto del texto
+y envíela a quien le instaló el programa.

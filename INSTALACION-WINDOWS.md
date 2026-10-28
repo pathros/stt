@@ -2,7 +2,7 @@
 
 ## Instalación fácil (recomendada)
 
-Instrucciones para imprimir o enviar: **`INSTALACION-WINDOWS.docx`** (en esta misma carpeta).
+Instrucciones para Windows (Bloc de notas o Word, no Markdown): **`INSTALACION-WINDOWS.txt`** y **`INSTALACION-WINDOWS.docx`**.
 
 No hay que copiar archivos a mano, ni editar `config.json`, ni escribir la ruta del usuario. Si el nombre lleva espacios (`Edith quijano`), el instalador lo resuelve.
 
