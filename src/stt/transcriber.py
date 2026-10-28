@@ -102,90 +102,34 @@ def _model_candidates(cfg) -> list[Path]:
     return found
 
 
-def _local_model(cfg) -> str | None:
-    """Carpeta ya descargada (proyecto o USB), si trae model.bin."""
-
-    for path in _model_candidates(cfg):
-
-        if (path / "model.bin").is_file():
-
-            return str(path)
-
-    return None
-
-
-def _download_model(name: str, attempts: int = 3) -> None:
-    """Baja el modelo con reintentos. Si ya está en caché, sale enseguida."""
-
-    import time
-
-    from faster_whisper.utils import download_model
-
-    last: Exception | None = None
-
-    for attempt in range(1, attempts + 1):
-
-        try:
-
-            download_model(name)
-
-            return
-
-        except Exception as exc:  # noqa: BLE001
-
-            last = exc
-
-            print(
-                f"No se pudo descargar el modelo "
-                f"(intento {attempt} de {attempts}): {exc}"
-            )
-
-            if attempt < attempts:
-
-                print("Se reintenta en unos segundos…")
-
-                time.sleep(3 * attempt)
-
-    raise SystemExit(
-        "No se pudo descargar el modelo de transcripción.\n"
-        "Revise la conexión y vuelva a arrastrar el audio, "
-        "o copie la carpeta models\\medium desde la USB.\n"
-        f"Detalle: {last}"
-    )
-
-
 def _get_model(cfg):
-    """Carga (y cachea) el modelo de faster-whisper en CPU."""
+    """Carga (y cachea) el modelo de faster-whisper en CPU.
+
+    Antes de abrirlo comprueba que los archivos sean los de Systran.
+    Siempre con ``local_files_only``: no vuelve a bajar otra revisión.
+    """
 
     from faster_whisper import WhisperModel
+
+    from stt.model_audit import ensure_official_model
 
     _compat_audio_open()
 
     threads = _cpu_threads()
 
-    local = _local_model(cfg)
+    local = str(ensure_official_model(cfg.model, _model_candidates(cfg)))
 
-    model_id = local or cfg.model
-
-    if local is None:
-
-        _download_model(cfg.model)
-
-    else:
-
-        print(f"Modelo local (sin descargar): {local}")
-
-    key = (model_id, cfg.compute_type, threads)
+    key = (local, cfg.compute_type, threads)
 
     if key not in _MODEL_CACHE:
 
         _MODEL_CACHE[key] = WhisperModel(
-            model_id,
+            local,
             device="cpu",
             compute_type=cfg.compute_type,
             cpu_threads=threads,
             num_workers=1,
-            local_files_only=local is not None,
+            local_files_only=True,
         )
 
     return _MODEL_CACHE[key]

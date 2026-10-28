@@ -9,7 +9,7 @@ from docx.shared import Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "INSTALACION-WINDOWS.docx"
-ZIP_URL = "https://github.com/pathros/stt/archive/refs/heads/main.zip"
+ZIP_URL = "https://github.com/pathros/stt/archive/refs/tags/v0.1.0.zip"
 
 
 def add_heading(doc: Document, text: str, level: int = 1) -> None:
@@ -96,7 +96,7 @@ def main() -> None:
             "Vaya a Descargas.",
             "Clic derecho sobre el archivo cuyo nombre empieza por stt.",
             "Elija Extraer todo y después Extraer.",
-            "Se abre una carpeta llamada stt-main. Entre en ella.",
+            "Se abre una carpeta cuyo nombre empieza por stt. Entre en ella.",
         ],
     )
 
@@ -105,7 +105,7 @@ def main() -> None:
         "3",
         "Instale con un doble clic",
         [
-            "Dentro de stt-main, doble clic en Instalar.bat.",
+            "Dentro de esa carpeta, doble clic en Instalar.bat.",
             "Si Windows muestra un aviso azul (“protegió su PC”), pulse Más información y luego Ejecutar de todas formas.",
             "No escriba nada. Espere. La primera vez puede tardar varios minutos.",
             "Si Python o uv ya están en la computadora, el instalador los usa y no los vuelve a instalar.",
@@ -121,7 +121,7 @@ def main() -> None:
             "En el Escritorio verá un icono llamado Transcribir.",
             "Arrastre el archivo de audio encima de ese icono.",
             "Se abre una ventana. Ahí se ve el avance y, en unas líneas, el texto que se va transcribiendo.",
-            "La primera transcripción descarga el modelo de idioma y tarda más. Las siguientes, menos.",
+            "La instalación descarga el modelo de idioma y comprueba que sea el oficial. La primera transcripción puede tardar un poco más en cargarlo.",
             "Al terminar, el Word está en Documentos, dentro de la carpeta Transcripciones.",
             "Ábralo con Word para revisar, agregar saltos de línea y ajustar el formato.",
         ],
@@ -158,7 +158,7 @@ def main() -> None:
     add_body(
         doc,
         "Si el dictamen dice que sí se puede, y de verdad lo necesita, "
-        "quien instaló el programa abre la carpeta stt-main y ejecuta "
+        "quien instaló el programa abre la carpeta del programa y ejecuta "
         ".venv\\Scripts\\stt.exe voces. La primera vez pide internet y una "
         "cuenta gratuita de Hugging Face para bajar el modelo. "
         "El audio no se envía a internet.",

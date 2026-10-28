@@ -220,6 +220,14 @@ def run_setup(auto: bool = False) -> None:
     save_config(cfg)
 
     print()
+    print("El modelo se descarga de la cuenta oficial Systran, si aún no está.")
+    print("Después se comprueba archivo por archivo. Si no coincide, no se usa.")
+
+    from stt.model_audit import ensure_official_model
+
+    ensure_official_model(model)
+
+    print()
     print("El idioma no se fija: se detecta solo a partir del audio.")
     print("El texto sale en párrafos (separados cuando hay una pausa).")
     print(f"Se guardará en: {output}")

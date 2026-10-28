@@ -6,13 +6,14 @@ Instrucciones para imprimir o enviar: **`INSTALACION-WINDOWS.docx`** (en esta mi
 
 No hay que copiar archivos a mano, ni editar `config.json`, ni escribir la ruta del usuario. Si el nombre lleva espacios (`Edith quijano`), el instalador lo resuelve.
 
-1. Descargue el ZIP: https://github.com/pathros/stt/archive/refs/heads/main.zip
-2. Clic derecho → **Extraer todo**.
-3. Entre en la carpeta `stt-main` y doble clic en **`Instalar.bat`**.
-4. Espere (internet la primera vez). No escriba nada. Si Python o uv ya están instalados, los usa y no los vuelve a instalar.
-5. En el Escritorio, arrastre el audio encima de **Transcribir**.
+1. Descargue el ZIP de la versión fijada (no use la rama `main`): https://github.com/pathros/stt/archive/refs/tags/v0.1.0.zip
+2. La huella SHA-256 de ese ZIP está en https://github.com/pathros/stt/releases/tag/v0.1.0 y dentro de `Instalar.bat` (`STT_SHA256`). Si el archivo baja el programa por su cuenta, no continúa cuando la huella no coincide.
+3. Clic derecho → **Extraer todo**.
+4. Entre en la carpeta cuyo nombre empieza por `stt` y doble clic en **`Instalar.bat`**.
+5. Espere (internet la primera vez). No escriba nada. Si Python o uv ya están instalados, los usa y no los vuelve a instalar. Ahí se descarga el modelo de Systran y se comprueba su huella.
+6. En el Escritorio, arrastre el audio encima de **Transcribir**.
 
-El texto queda en **Documentos\Transcripciones**, en Word, en párrafos. El idioma se detecta solo. El modelo se elige según la memoria de esa PC.
+El texto queda en **Documentos\Transcripciones**, en Word, en párrafos. El idioma se detecta solo. El modelo se elige según la memoria de esa PC y solo se abre si coincide con el oficial.
 
 Para cambiar la carpeta más adelante: doble clic en **Configurar-transcripcion** (Escritorio).
 
@@ -168,7 +169,7 @@ Con **10 GB libres o más** es suficiente.
 ## 3. Instalar `uv` (gestor de Python; no instalar Python global)
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/0.13.6/install.ps1 | iex"
 ```
 
 **Cierra PowerShell por completo**, abre uno nuevo, y verifica:
@@ -469,7 +470,7 @@ uv run stt "C:\Users\Secre-alag1\Downloads\Agricultura_organica_Riesgos_y_benefi
 1. Localizar el `.mp3` en el Explorador.
 2. Arrastrarlo encima de **Transcribir** (Escritorio).
 3. Esperar; el resultado sale en `Documents\Transcripciones` como **`.docx`** (abrir con Word).
-4. La primera vez tarda más (descarga del modelo); después solo carga y transcribe.
+4. La instalación ya bajó el modelo y comprobó la huella. La primera transcripción tarda más en cargarlo; después, menos.
 
 Un audio de ~2 h con `medium` en CPU puede tardar **cerca de 2 h o más**: es normal en i5 sin GPU.
 
@@ -486,7 +487,7 @@ Un audio de ~2 h con `medium` en CPU puede tardar **cerca de 2 h o más**: es no
 | Rutas “no se encuentra” al pegar comandos | El usuario de la guía no es el de esa PC → `$env:USERNAME` |
 | `uv` no se reconoce | Nueva terminal o reiniciar Windows |
 | `ffmpeg` no se reconoce | Nueva terminal tras `winget`; `ffmpeg -version` |
-| Parece congelado en la 1ª corrida | Descarga del modelo; esperar |
+| Parece congelado al instalar o en la 1ª corrida | Está bajando el modelo o comprobando su huella; esperar |
 | PC muy lenta / audio de muchas horas | `"beam_size": 2` o `"model": "small"` |
 | “No puntúa” | Whisper sí puntúa; abrir el `.docx` nuevo. Si sigue plano, subir a `medium` (no `tiny`) |
 | `No module named 'docx'` | Falta dependencia: `uv pip install -e .` |

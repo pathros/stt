@@ -2,24 +2,42 @@
 setlocal EnableExtensions
 chcp 65001 >nul
 
+REM Version fijada. No se sigue la rama main: si la cuenta cambiara,
+REM esta huella deja de coincidir y la instalacion se detiene.
+REM STT_SHA256 es la del ZIP de GitHub del tag (se publica en el release).
+set "STT_TAG=v0.1.0"
+set "STT_SHA256=pendiente"
+
 REM Si este archivo no está junto al programa, lo descarga solo
 REM en la carpeta del usuario (sirve aunque el nombre tenga espacios).
 if not exist "%~dp0pyproject.toml" (
   echo.
-  echo  Descargando el programa. Hace falta internet.
+  echo  Descargando la version %STT_TAG%. Hace falta internet.
+  echo  Se comprueba la huella antes de instalar.
   echo.
   powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$ErrorActionPreference='Stop';" ^
+    "$expected=([string]$env:STT_SHA256).ToLowerInvariant();" ^
+    "$tag=[string]$env:STT_TAG;" ^
     "$dest=Join-Path $env:USERPROFILE 'Apps\stt';" ^
-    "$zip=Join-Path $env:TEMP 'stt-main.zip';" ^
-    "Invoke-WebRequest -Uri 'https://github.com/pathros/stt/archive/refs/heads/main.zip' -OutFile $zip;" ^
+    "$zip=Join-Path $env:TEMP 'stt-release.zip';" ^
+    "$url='https://github.com/pathros/stt/archive/refs/tags/' + $tag + '.zip';" ^
+    "Invoke-WebRequest -Uri $url -OutFile $zip;" ^
+    "$actual=(Get-FileHash -Algorithm SHA256 -Path $zip).Hash.ToLowerInvariant();" ^
+    "if ($actual -ne $expected) {" ^
+    "  Remove-Item $zip -Force -ErrorAction SilentlyContinue;" ^
+    "  Write-Error ('La descarga no coincide con la version publicada (' + $tag + '). Esperada: ' + $expected + ' Recibida: ' + $actual);" ^
+    "  exit 1" ^
+    "};" ^
     "$extract=Join-Path $env:TEMP 'stt-extract';" ^
     "if (Test-Path $extract) { Remove-Item $extract -Recurse -Force };" ^
     "Expand-Archive -Path $zip -DestinationPath $extract -Force;" ^
-    "$inner=Join-Path $extract 'stt-main';" ^
+    "$dirs=@(Get-ChildItem -LiteralPath $extract -Directory);" ^
+    "if ($dirs.Count -ne 1) { Write-Error 'El ZIP no trae una sola carpeta.'; exit 1 };" ^
     "New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null;" ^
     "if (Test-Path $dest) { Remove-Item $dest -Recurse -Force };" ^
-    "Move-Item $inner $dest;" ^
+    "Move-Item $dirs[0].FullName $dest;" ^
+    "Remove-Item $zip -Force;" ^
     "Write-Output $dest"
   if errorlevel 1 goto :fail
   if not exist "%USERPROFILE%\Apps\stt\Instalar.bat" goto :fail
@@ -43,7 +61,7 @@ echo.
 call :locate_uv
 if errorlevel 1 (
   echo No se encontro uv. Se instalara.
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex"
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/0.13.6/install.ps1 | iex"
   set "UVCMD=%USERPROFILE%\.local\bin\uv.exe"
 ) else (
   echo uv ya esta instalado. No se vuelve a instalar.
