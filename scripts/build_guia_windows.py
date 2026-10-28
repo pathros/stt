@@ -96,7 +96,7 @@ def main() -> None:
             "Vaya a Descargas.",
             "Clic derecho sobre el archivo cuyo nombre empieza por stt.",
             "Elija Extraer todo y después Extraer.",
-            "Se abre una carpeta cuyo nombre empieza por stt. Entre en ella.",
+            "Se abre una carpeta llamada stt-0.1.0. Entre en ella.",
         ],
     )
 
@@ -105,7 +105,7 @@ def main() -> None:
         "3",
         "Instale con un doble clic",
         [
-            "Dentro de esa carpeta, doble clic en Instalar.bat.",
+            "Dentro de stt-0.1.0, doble clic en Instalar.bat.",
             "Si Windows muestra un aviso azul (“protegió su PC”), pulse Más información y luego Ejecutar de todas formas.",
             "No escriba nada. Espere. La primera vez puede tardar varios minutos.",
             "Si Python o uv ya están en la computadora, el instalador los usa y no los vuelve a instalar.",

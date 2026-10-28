@@ -6,7 +6,7 @@ REM Version fijada. No se sigue la rama main: si la cuenta cambiara,
 REM esta huella deja de coincidir y la instalacion se detiene.
 REM STT_SHA256 es la del ZIP de GitHub del tag (se publica en el release).
 set "STT_TAG=v0.1.0"
-set "STT_SHA256=pendiente"
+set "STT_SHA256=918bb5c88f4d3623ffbd7dc14ee2bd0bc567f74a9980236b0ec71b2708c8e8cb"
 
 REM Si este archivo no está junto al programa, lo descarga solo
 REM en la carpeta del usuario (sirve aunque el nombre tenga espacios).

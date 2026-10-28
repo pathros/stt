@@ -7,9 +7,9 @@ Instrucciones para imprimir o enviar: **`INSTALACION-WINDOWS.docx`** (en esta mi
 No hay que copiar archivos a mano, ni editar `config.json`, ni escribir la ruta del usuario. Si el nombre lleva espacios (`Edith quijano`), el instalador lo resuelve.
 
 1. Descargue el ZIP de la versión fijada (no use la rama `main`): https://github.com/pathros/stt/archive/refs/tags/v0.1.0.zip
-2. La huella SHA-256 de ese ZIP está en https://github.com/pathros/stt/releases/tag/v0.1.0 y dentro de `Instalar.bat` (`STT_SHA256`). Si el archivo baja el programa por su cuenta, no continúa cuando la huella no coincide.
+2. Compruebe la huella SHA-256 del ZIP: `918bb5c88f4d3623ffbd7dc14ee2bd0bc567f74a9980236b0ec71b2708c8e8cb`. Es la misma que trae `Instalar.bat` (`STT_SHA256`). Si el archivo baja el programa por su cuenta, no continúa cuando la huella no coincide.
 3. Clic derecho → **Extraer todo**.
-4. Entre en la carpeta cuyo nombre empieza por `stt` y doble clic en **`Instalar.bat`**.
+4. Entre en la carpeta `stt-0.1.0` y doble clic en **`Instalar.bat`**.
 5. Espere (internet la primera vez). No escriba nada. Si Python o uv ya están instalados, los usa y no los vuelve a instalar. Ahí se descarga el modelo de Systran y se comprueba su huella.
 6. En el Escritorio, arrastre el audio encima de **Transcribir**.
 
