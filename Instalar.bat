@@ -121,7 +121,7 @@ echo.
 echo Instalacion terminada.
 echo.
 echo En el Escritorio, arrastre el audio encima del icono Transcribir.
-echo El Word queda en la carpeta Documentos, dentro de Transcripciones.
+echo El Word queda en la carpeta Descargas.
 echo.
 pause
 exit /b 0

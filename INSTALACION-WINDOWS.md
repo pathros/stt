@@ -13,7 +13,7 @@ No hay que copiar archivos a mano, ni editar `config.json`, ni escribir la ruta 
 5. Espere (internet la primera vez). No escriba nada. Si Python o uv ya están instalados, los usa y no los vuelve a instalar. Ahí se descarga el modelo de Systran y se comprueba su huella.
 6. En el Escritorio, arrastre el audio encima de **Transcribir**.
 
-El texto queda en **Documentos\Transcripciones**, en Word, en párrafos. El idioma se detecta solo. El modelo se elige según la memoria de esa PC y solo se abre si coincide con el oficial.
+El texto queda en **Descargas**, en Word, en párrafos. El idioma se detecta solo. El modelo se elige según la memoria de esa PC y solo se abre si coincide con el oficial.
 
 Para cambiar la carpeta más adelante: doble clic en **Configurar-transcripcion** (Escritorio).
 

@@ -1,27 +1,66 @@
 # stt — Speech To Text
 
-CLI de transcripción con [faster-whisper](https://github.com/SYSTRAN/faster-whisper).  
+Transcribe audios y videos en la propia computadora con [faster-whisper](https://github.com/SYSTRAN/faster-whisper). El idioma se detecta solo. Mientras avanza se ven la barra y unas líneas del texto. El archivo queda en **Descargas**, en Markdown o en Word.
+
 También descarga captions de YouTube y genera podcasts de audio a partir de guiones Markdown.
 
-## Requisitos
+## Así se ve
 
-- Python ≥ 3.12
-- [ffmpeg](https://ffmpeg.org/) (`brew install ffmpeg`)
-- macOS recomendado para el motor de podcast `say` (voces del sistema)
+La primera vez comprueba y descarga el modelo oficial. Después transcribe y muestra el texto en vivo. Al terminar, guarda el archivo.
+
+![Descarga del modelo y transcripción en curso](docs/images/transcripcion-en-curso.png)
+
+![Avance de la transcripción, con el texto que se está generando](docs/images/transcripcion-avance.png)
+
+![Transcripción terminada. El archivo quedó en Descargas](docs/images/transcripcion-lista.png)
+
+Las capturas son de macOS. En Windows la ventana hace lo mismo: barra, texto en vivo y archivo en Descargas.
+
+## Lo mismo en macOS y en Windows
+
+| | macOS | Windows |
+|---|---|---|
+| Transcribir audio o video local | Sí | Sí |
+| Idioma automático | Sí | Sí |
+| Texto en vivo y barra de avance | Sí | Sí |
+| Word (`.docx`) | Sí, con `-f docx` o en la configuración | Sí. El instalador lo deja así |
+| Elegir carpeta de salida | Sí: `-o` o `stt configurar` | Sí: icono **Configurar-transcripcion** |
+| Carpeta por defecto | Descargas (`~/Downloads`) | Descargas |
+| Formato por defecto | Markdown (`.md`) | Word (`.docx`) |
+| Arrastrar el audio a un icono | No. Se usa la terminal | Sí: icono **Transcribir** |
+| Separar quién habla | Si la memoria alcanza | Si la memoria alcanza |
+| Podcast con voz del sistema (`say`) | Sí | No. En Windows el podcast usa voces en línea (`edge`) |
+
+## macOS
+
+Requisitos: Python 3.12 o más reciente, y ffmpeg (`brew install ffmpeg`).
 
 ```bash
+cd ruta/al/proyecto
 pip install -e .
+stt ~/Downloads/entrevista.mp3
 ```
 
-### Windows (uso sencillo)
+Word y otra carpeta, solo en esa corrida:
 
-Instrucciones para Windows: **`INSTALACION-WINDOWS.txt`** (Bloc de notas) y **`INSTALACION-WINDOWS.docx`** (Word).
+```bash
+stt ~/Downloads/entrevista.mp3 -f docx -o ~/Downloads
+```
 
-Descargue el ZIP de la versión etiquetada [v0.1.0](https://github.com/pathros/stt/archive/refs/tags/v0.1.0.zip), extraiga y doble clic en **`Instalar.bat`**. No se sigue la rama `main`. La huella SHA-256 de ese ZIP es `918bb5c88f4d3623ffbd7dc14ee2bd0bc567f74a9980236b0ec71b2708c8e8cb`. Si `Instalar.bat` baja el programa solo, rechaza un ZIP distinto. No se edita `config.json` ni se escriben rutas (aunque el usuario de Windows tenga espacios). El icono **Transcribir** queda en el Escritorio; el Word, en Documentos\Transcripciones.
+Para dejarlo fijo: `stt` → opción 4 (configuración), o `stt configurar`. Ahí se eligen carpeta y formato. Enter en la carpeta usa Descargas.
 
-La instalación descarga el modelo de transcripción desde la cuenta **Systran** en una revisión fijada y comprueba la huella de cada archivo. `model.bin` tiene que ser CTranslate2 (`WhisperSpec`), no un pickle ni un zip. Si no coincide, no se abre.
+## Windows
 
-Para cambiar carpeta o formato después: icono **Configurar-transcripcion**, o `stt configurar`.
+Instrucciones para abrir sin Markdown: [INSTALACION-WINDOWS.txt](INSTALACION-WINDOWS.txt) (Bloc de notas) y [INSTALACION-WINDOWS.docx](INSTALACION-WINDOWS.docx) (Word).
+
+1. Descargue el ZIP de la versión [v0.1.0](https://github.com/pathros/stt/archive/refs/tags/v0.1.0.zip). No use la rama `main`.
+2. Huella SHA-256 de ese ZIP: `918bb5c88f4d3623ffbd7dc14ee2bd0bc567f74a9980236b0ec71b2708c8e8cb`.
+3. Extraiga y doble clic en **`Instalar.bat`**. Si Python o uv ya están, no los vuelve a instalar.
+4. En el Escritorio, arrastre el audio encima de **Transcribir**.
+
+El Word queda en Descargas. Para otra carpeta o para pasar a Markdown: doble clic en **Configurar-transcripcion**.
+
+La instalación descarga el modelo de **Systran** en una revisión fijada y comprueba la huella de cada archivo. `model.bin` tiene que ser CTranslate2, no un programa ejecutable. Si no coincide, no se abre.
 
 ## Cómo transcribir
 
@@ -122,9 +161,9 @@ Si tras varios videos YouTube responde *Sign in to confirm you're not a bot*, us
 Varios a la vez: `-f md,srt,json` o `-f docx`.  
 `-t` / `--timestamps` añade marcas de tiempo donde aplique; `--no-timestamps` las omite.
 
-En macOS el default es `md`. En Windows de oficina conviene `docx` (configurable).
+En macOS el archivo por defecto es Markdown. En Windows, el instalador deja Word. En los dos se cambia con `-f docx`, `-f md` o `stt configurar`.
 
-Salida por defecto: `~/Downloads` (configurable).
+Salida por defecto en los dos sistemas: la carpeta Descargas (`~/Downloads`).
 
 ### Rendimiento y puntuación (CPU)
 

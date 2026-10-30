@@ -123,7 +123,7 @@ def main() -> None:
             "Arrastre el archivo de audio encima de ese icono.",
             "Se abre una ventana. Ahí se ve el avance y, en unas líneas, el texto que se va transcribiendo.",
             "La instalación descarga el modelo de idioma y comprueba que sea el oficial. La primera transcripción puede tardar un poco más en cargarlo.",
-            "Al terminar, el Word está en Documentos, dentro de la carpeta Transcripciones.",
+            "Al terminar, el Word está en la carpeta Descargas.",
             "Ábralo con Word para revisar, agregar saltos de línea y ajustar el formato.",
         ],
     )
@@ -132,7 +132,7 @@ def main() -> None:
 
     for item in (
         "El texto se guarda en Word (.docx).",
-        "La carpeta es Documentos\\Transcripciones.",
+        "La carpeta es Descargas.",
         "El idioma se detecta solo a partir del audio.",
         "El programa elige un modelo acorde a la memoria de esa computadora, para no dejarla lenta.",
         "Los párrafos se separan cuando hay una pausa en el audio.",
@@ -234,13 +234,13 @@ def main() -> None:
         "el texto que se va transcribiendo.",
         "La primera transcripción descarga el modelo de idioma y puede tardar",
         "varios minutos. El aviso de Hugging Face no es un error.",
-        "Al terminar, el Word está en Documentos, dentro de Transcripciones.",
+        "Al terminar, el Word está en la carpeta Descargas.",
         "Ábralo con Word para revisar, agregar saltos de línea y ajustar el formato.",
         "",
         "QUÉ QUEDA CONFIGURADO SOLO",
         "",
         "- El texto se guarda en Word (.docx).",
-        "- La carpeta es Documentos\\Transcripciones.",
+        "- La carpeta es Descargas.",
         "- El idioma se detecta solo a partir del audio.",
         "- El programa elige un modelo acorde a la memoria de esa computadora.",
         "- Los párrafos se separan cuando hay una pausa en el audio.",

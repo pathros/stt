@@ -141,7 +141,7 @@ def main():
     parser.add_argument(
         "--auto",
         action="store_true",
-        help="Con «configurar»: Word, Documentos y modelo según la memoria, sin preguntas",
+        help="Con «configurar»: Word, Descargas y modelo según la memoria, sin preguntas",
     )
 
     args = parser.parse_args()

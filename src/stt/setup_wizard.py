@@ -24,10 +24,57 @@ def _windows_folder(csidl: int, fallback: Path) -> Path:
     return Path(buffer.value)
 
 
-def documents_dir() -> Path:
-    """Carpeta Documentos del usuario (también si Windows la tiene en OneDrive)."""
+def downloads_dir() -> Path:
+    """Carpeta Descargas. En Windows usa la carpeta conocida del sistema."""
 
-    return _windows_folder(5, Path.home() / "Documents")
+    if os.name != "nt":
+
+        return Path.home() / "Downloads"
+
+    import ctypes
+
+    class GUID(ctypes.Structure):
+
+        _fields_ = [
+            ("Data1", ctypes.c_ulong),
+            ("Data2", ctypes.c_ushort),
+            ("Data3", ctypes.c_ushort),
+            ("Data4", ctypes.c_ubyte * 8),
+        ]
+
+    folder_id = GUID(
+        0x374DE290,
+        0x123F,
+        0x4565,
+        (ctypes.c_ubyte * 8)(0x91, 0x64, 0x39, 0xC4, 0x92, 0x5E, 0x46, 0x7B),
+    )
+
+    pointer = ctypes.c_wchar_p()
+
+    shell32 = ctypes.windll.shell32
+
+    ole32 = ctypes.windll.ole32
+
+    shell32.SHGetKnownFolderPath.argtypes = [
+        ctypes.POINTER(GUID),
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_wchar_p),
+    ]
+
+    shell32.SHGetKnownFolderPath.restype = ctypes.c_long
+
+    if shell32.SHGetKnownFolderPath(ctypes.byref(folder_id), 0, None, ctypes.byref(pointer)) != 0:
+
+        return Path.home() / "Downloads"
+
+    try:
+
+        return Path(pointer.value)
+
+    finally:
+
+        ole32.CoTaskMemFree(pointer)
 
 
 def desktop_dir() -> Path:
@@ -123,13 +170,13 @@ def write_shortcuts(project: Path, desktop: Path) -> tuple[Path, Path]:
 def run_setup(auto: bool = False) -> None:
     """Diagnóstico, carpeta, formato Word y acceso directo. Idioma: automático.
 
-    Con ``auto=True`` no pregunta nada: Word, carpeta Documentos y el
+    Con ``auto=True`` no pregunta nada: Word, carpeta Descargas y el
     modelo que quepa en la memoria. Sirve para quien no quiere tocar rutas.
     """
 
     report = diagnose()
 
-    default_out = documents_dir() / "Transcripciones"
+    default_out = downloads_dir()
 
     print()
     print("Configuración de la transcripción")
@@ -183,7 +230,7 @@ def run_setup(auto: bool = False) -> None:
             model = report.model
 
         print()
-        print("Enter usa Documentos\\Transcripciones. No hace falta editar config.json.")
+        print("Enter usa la carpeta Descargas. No hace falta editar config.json.")
 
         output = Path(_ask("Carpeta de salida", str(default_out))).expanduser()
 
